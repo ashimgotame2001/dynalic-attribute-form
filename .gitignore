@@ -1,0 +1,81 @@
+# Build outputs
+.gradle/
+build/
+out/
+target/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.project
+.classpath
+.settings/
+.atom/
+.eclipse/
+.apt_generated/
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# Logs
+*.log
+logs/
+*.gz
+*.pid
+
+# Environment files
+.env
+.env.local
+.env.*.local
+.envrc
+
+# PostgreSQL
+*.db
+data/
+
+# Temporary files
+tmp/
+temp/
+.temp/
+
+# Node/Java others
+.npm/
+.classpath
+.factorypath
+.springBeans
+
+# Test coverage
+jacoco.exec
+coverage/
+
+# Backups
+*.bak
+*.backup
+*.orig
+
+# VS Code
+.vscode/
+
+# IntelliJ IDEA / Android Studio
+.idea/
+*.ipr
+*.iws
+*.ids
+*.iml
+
+# Gradle specific
+.gradle/
+gradle-apple-
+gradle-apple/
+gradle-jenkins/
+gradle-kotlin/
+gradle-native/
+gradle-scripts/

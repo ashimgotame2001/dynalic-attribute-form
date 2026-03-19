@@ -1,0 +1,341 @@
+{
+  "moduleName": "Customer Management",
+  "artifactName": "CustomerRegister",
+  "version": "1.0.0",
+  "domainModel": {
+    "attributes": [
+      {
+        "modelName": "Individual",
+        "referenceModel": "customer/Individual",
+        "attributeName": "individual",
+        "attributeType": "Individual",
+        "reference": true,
+        "association": true,
+        "domainModel": {
+          "attributes": [
+            {
+              "modelName": "Gender",
+              "referenceModel": "Individual/Gender",
+              "attributeName": "gender",
+              "attributeType": "Gender",
+              "reference": true,
+              "collection": true,
+              "domainModel": {
+                "attributes": [
+                  {
+                    "attributeName": "id",
+                    "attributeType": "Long",
+                    "visible": true,
+                    "shortLabel": "Gender",
+                    "longLabel": "Enter Gender.",
+                    "validations": [
+                      {
+                        "required": {
+                          "value": true,
+                          "message": "Gender is required."
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "modelName": "Country",
+              "referenceModel": "Individual/Country",
+              "attributeName": "origin",
+              "attributeType": "Country",
+              "collection": true,
+              "reference": true,
+              "domainModel": {
+                "attributes": [
+                  {
+                    "attributeName": "alphaTwoCode",
+                    "attributeType": "String",
+                    "visible": true,
+                    "shortLabel": "Nationality",
+                    "longLabel": "Enter Nationality.",
+                    "validations": [
+                      {
+                        "required": {
+                          "value": true,
+                          "message": "Nationality is required."
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "modelName": "Country",
+              "referenceModel": "Individual/Country",
+              "attributeName": "residingCountry",
+              "attributeType": "ResidingCountry",
+              "reference": true,
+              "collection": true,
+              "domainModel": {
+                "attributes": [
+                  {
+                    "attributeName": "alphaTwoCode",
+                    "attributeType": "String",
+                    "visible": true,
+                    "shortLabel": "Alpha Two Code",
+                    "longLabel": "Enter AlphaTwoCode.",
+                    "validations": [
+                      {
+                        "required": {
+                          "value": true,
+                          "message": "AlphaTwoCode is required."
+                        },
+                        "regex": {
+                          "pattern": "^[A-Z]{2}$",
+                          "message": "Country code must be exactly two uppercase letters (ISO standard)."
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "modelName": "Address",
+              "referenceModel": "Individual/Address",
+              "attributeName": "address",
+              "attributeType": "Address",
+              "reference": true,
+              "collection": true,
+              "domainModel": {
+                "attributes": [
+                  {
+                    "modelName": "PostalCode",
+                    "referenceModel": "Address/PostalCode",
+                    "attributeName": "postalCodeInfo",
+                    "attributeType": "PostalCode",
+                    "reference": true,
+                    "domainModel": {
+                      "attributes": [
+                        {
+                          "attributeName": "postalCode",
+                          "attributeType": "String",
+                          "visible": true,
+                          "shortLabel": "Postal Code",
+                          "longLabel": "Enter PostalCode.",
+                          "validations": [
+                            {
+                              "required": {
+                                "value": true,
+                                "message": "PostalCode is required."
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "attributeName": "city",
+                    "attributeType": "String",
+                    "visible": true,
+                    "shortLabel": "City",
+                    "longLabel": "Enter City.",
+                    "validations": [
+                      {
+                        "required": {
+                          "value": true,
+                          "message": "City is required."
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "attributeName": "addressLine1",
+                    "attributeType": "String",
+                    "visible": true,
+                    "shortLabel": "Address Line 1",
+                    "longLabel": "Enter AddressLine1",
+                    "validations": [
+                      {
+                        "required": {
+                          "value": true,
+                          "message": "AddressLine1 is required."
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "attributeName": "firstName",
+              "attributeType": "String",
+              "visible": true,
+              "shortLabel": "First Name",
+              "longLabel": "Enter FirstName.",
+              "validations": [
+                {
+                  "required": {
+                    "value": true,
+                    "message": "This field is required"
+                  }
+                }
+              ]
+            },
+            {
+              "attributeName": "middleName",
+              "attributeType": "String",
+              "visible": true,
+              "shortLabel": "Middle Name",
+              "longLabel": "Enter MiddleName."
+            },
+            {
+              "attributeName": "lastName",
+              "attributeType": "String",
+              "visible": true,
+              "shortLabel": "Last Name",
+              "longLabel": "Enter LastName.",
+              "validations": [
+                {
+                  "required": {
+                    "value": true,
+                    "message": "This field is required"
+                  }
+                }
+              ]
+            },
+            {
+              "attributeName": "dateOfBirth",
+              "attributeType": "DateTime",
+              "visible": true,
+              "shortLabel": "Date Of Birth",
+              "longLabel": "Enter DateOfBirth.",
+              "validations": [
+                {
+                  "required": {
+                    "value": true,
+                    "message": "DateOfBirth is required."
+                  },
+                  "dateFormat": {
+                    "pattern": "dd/MM/yyyy",
+                    "message": "Date must be in dd/MM/yyyy format."
+                  },
+                  "allowFuture": {
+                    "value": false,
+                    "message": "Date of birth must be a future date."
+                  },
+                  "allowPast": {
+                    "value": true,
+                    "message": "Date of birth date must be a past date."
+                  }
+                }
+              ]
+            },
+            {
+              "attributeName": "contactNumber",
+              "attributeType": "String",
+              "visible": true,
+              "shortLabel": "Contact Number",
+              "longLabel": "Enter ContactNumbers.",
+              "validations": [
+                {
+                  "required": {
+                    "value": true,
+                    "message": "This field is required"
+                  },
+                  "min": {
+                    "value": 5,
+                    "message": "Length should be < {value}"
+                  },
+                  "max": {
+                    "value": 10,
+                    "message": "Length should be > {value}"
+                  }
+                }
+              ]
+            },
+            {
+              "attributeName": "email",
+              "attributeType": "String",
+              "visible": true,
+              "shortLabel": "Email",
+              "longLabel": "Enter Email.",
+              "validations": [
+                {
+                  "required": {
+                    "value": true,
+                    "message": "Email is required."
+                  }
+                },
+                {
+                  "regex": {
+                    "pattern": "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$",
+                    "message": "Please enter a valid email address."
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "modelName": "ApplicationUser",
+        "referenceModel": "access-management/ApplicationUser",
+        "attributeName": "user",
+        "reference": true,
+        "attributeType": "ApplicationUser",
+        "domainModel": {
+          "attributes": [
+            {
+              "attributeName": "identifier",
+              "attributeType": "String",
+              "visible": false,
+              "shortLabel": "Email",
+              "longLabel": "Enter Email.",
+              "validations": [
+                {
+                  "required": {
+                    "value": true,
+                    "message": "Email is required."
+                  }
+                }
+              ]
+            },
+            {
+              "attributeName": "secret",
+              "attributeType": "String",
+              "visible": true,
+              "shortLabel": "Password",
+              "longLabel": "Enter Password.",
+              "validations": [
+                {
+                  "required": {
+                    "value": true,
+                    "message": "Password is required."
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "modelName": "Referral",
+        "referenceModel": "customer/Referral",
+        "attributeName": "referral",
+        "attributeType": "Referral",
+        "reference": true,
+        "domainModel": {
+          "attributes": [
+            {
+              "attributeName": "referralCode",
+              "attributeType": "String",
+              "visible": true,
+              "shortLabel": "Referral Code",
+              "longLabel": "Enter ReferralCode."
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

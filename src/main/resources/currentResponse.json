@@ -1,0 +1,217 @@
+{
+  "formName": "customer-registration",
+  "version": 1,
+  "description": "Customer registration form",
+  "targetDtoClassName": "com.example.dynamicform.model.RegisterCustomerRequest",
+  "isActive": true,
+  "metadata": {
+    "modelName": "customer-registration",
+    "domainModel": [
+      {
+        "modelName": "User",
+        "attributeName": "user",
+        "reference": true,
+        "collection": false,
+        "visible": true,
+        "domainModel": [
+          {
+            "modelName": "String",
+            "attributeName": "secret",
+            "reference": false,
+            "collection": false,
+            "visible": true,
+            "validations": [
+              {
+                "required": {
+                  "message": "Secret is required.",
+                  "value": true
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "modelName": "Individual",
+        "attributeName": "individual",
+        "reference": true,
+        "collection": false,
+        "visible": true,
+        "domainModel": [
+          {
+            "modelName": "String",
+            "attributeName": "firstName",
+            "reference": false,
+            "collection": false,
+            "visible": true,
+            "validations": [
+              {
+                "required": {
+                  "message": "First name is required.",
+                  "value": true
+                }
+              },
+              {
+                "regex": {
+                  "pattern": "^[A-Za-z]+$",
+                  "message": "First name must contain only letters."
+                }
+              }
+            ]
+          },
+          {
+            "modelName": "String",
+            "attributeName": "lastName",
+            "reference": false,
+            "collection": false,
+            "visible": true,
+            "validations": [
+              {
+                "required": {
+                  "message": "Last name is required.",
+                  "value": true
+                }
+              }
+            ]
+          },
+          {
+            "modelName": "LocalDate",
+            "attributeName": "dateOfBirth",
+            "reference": false,
+            "collection": false,
+            "visible": true,
+            "validations": [
+              {
+                "required": {
+                  "message": "Date of birth is required.",
+                  "value": true
+                }
+              },
+              {
+                "futureDate": {
+                  "message": "Date of birth cannot be in the future.",
+                  "value": false
+                }
+              }
+            ]
+          },
+          {
+            "modelName": "Gender",
+            "attributeName": "gender",
+            "reference": true,
+            "collection": false,
+            "visible": true,
+            "domainModel": [
+              {
+                "modelName": "Long",
+                "attributeName": "id",
+                "reference": false,
+                "collection": false,
+                "visible": true
+              }
+            ]
+          },
+          {
+            "modelName": "Address",
+            "attributeName": "address",
+            "reference": true,
+            "collection": false,
+            "visible": true,
+            "domainModel": [
+              {
+                "modelName": "PostalCodeInfo",
+                "attributeName": "postalCodeInfo",
+                "reference": true,
+                "collection": false,
+                "visible": true,
+                "domainModel": [
+                  {
+                    "modelName": "String",
+                    "attributeName": "postalCode",
+                    "reference": false,
+                    "collection": false,
+                    "visible": true,
+                    "validations": [
+                      {
+                        "required": {
+                          "message": "Postal code is required.",
+                          "value": true
+                        }
+                      },
+                      {
+                        "regex": {
+                          "pattern": "^\\d{5}$",
+                          "message": "Postal code must be exactly 5 digits."
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "modelName": "String",
+                "attributeName": "city",
+                "reference": false,
+                "collection": false,
+                "visible": true
+              },
+              {
+                "modelName": "String",
+                "attributeName": "addressLine1",
+                "reference": false,
+                "collection": false,
+                "visible": true,
+                "validations": [
+                  {
+                    "required": {
+                      "message": "Address line 1 is required.",
+                      "value": true
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "modelName": "String",
+            "attributeName": "email",
+            "reference": false,
+            "collection": false,
+            "visible": true,
+            "validations": [
+              {
+                "required": {
+                  "message": "Email is required.",
+                  "value": true
+                }
+              },
+              {
+                "regex": {
+                  "pattern": "^[^@]+@[^@]+\\.[^@]+$",
+                  "message": "Email must be valid."
+                }
+              }
+            ]
+          },
+          {
+            "modelName": "String",
+            "attributeName": "contactNumber",
+            "reference": false,
+            "collection": false,
+            "visible": true,
+            "validations": [
+              {
+                "required": {
+                  "message": "Contact number is required.",
+                  "value": true
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "createdAt": "2026-03-11T12:01:53.932575",
+  "updatedAt": "2026-03-11T12:01:53.932614"
+}

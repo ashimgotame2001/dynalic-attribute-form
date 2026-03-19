@@ -1,0 +1,644 @@
+{
+  "info": {
+    "name": "Dynamic Form Engine API",
+    "description": "Comprehensive Postman collection for the Metadata-Driven Dynamic Form System.\n\n**Key Features:**\n- Form Configuration Management (Admin)\n- Public Form Operations\n- RSP Attribute Contract Management\n- RSP Related Attribute Management\n\n**Authentication:** Admin endpoints require Bearer token. Form submission may require user token.\n\n**Base URL:** http://localhost:8080",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Form Configuration (Admin)",
+      "description": "Admin APIs for managing form metadata configurations. Requires admin authentication.",
+      "item": [
+        {
+          "name": "Create Form Configuration",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"formName\": \"customer-registration\",\n  \"description\": \"Customer registration form\",\n  \"targetDtoClassName\": \"com.example.dynamicform.model.RegisterCustomerRequest\",\n  \"rspId\": 1,\n  \"fieldType\": \"REGISTRATION\",\n  \"fields\": [\n    {\n      \"referenceModel\": \"user.secret\",\n      \"visible\": true,\n      \"shortLabel\": \"Secret\",\n      \"longLabel\": \"Enter secret password\",\n      \"validations\": [\n        {\n          \"type\": \"required\",\n          \"value\": true,\n          \"message\": \"Secret is required.\"\n        }\n      ]\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/config/forms",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "config",
+                "forms"
+              ]
+            },
+            "description": "Creates a new form configuration with field specifications."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Form Configuration",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/config/forms/{{form_name}}?version={{version}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "config",
+                "forms",
+                "{{form_name}}"
+              ],
+              "query": [
+                {
+                  "key": "version",
+                  "value": "{{version}}",
+                  "description": "Optional version number"
+                }
+              ]
+            },
+            "description": "Retrieves a specific form configuration."
+          },
+          "response": []
+        },
+        {
+          "name": "List Form Configurations",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/config/forms",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "config",
+                "forms"
+              ]
+            },
+            "description": "Lists all form configurations."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Form Configuration",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/config/forms/{{form_name}}?version={{version}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "config",
+                "forms",
+                "{{form_name}}"
+              ],
+              "query": [
+                {
+                  "key": "version",
+                  "value": "{{version}}",
+                  "description": "Required version number"
+                }
+              ]
+            },
+            "description": "Deletes a specific form configuration version."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Form Operations (Public)",
+      "description": "Public APIs for form retrieval, validation, and submission.",
+      "item": [
+        {
+          "name": "Get Form Definition",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/forms/{{form_name}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "forms",
+                "{{form_name}}"
+              ]
+            },
+            "description": "Retrieves the complete form definition for rendering."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Customized Form Definition",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rspId\": 1,\n  \"fieldType\": \"REGISTRATION\",\n  \"attributes\": {\n    \"firstName\": \"John\",\n    \"email\": \"john@example.com\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/forms/{{form_name}}/config",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "forms",
+                "{{form_name}}",
+                "config"
+              ]
+            },
+            "description": "Gets customized form definition filtered by RSP contracts and request attributes."
+          },
+          "response": []
+        },
+        {
+          "name": "Validate Form Data",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"John\",\n  \"individual\": {\n    \"dateOfBirth\": \"01/01/1990\",\n    \"gender\": {\n      \"id\": 1\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/forms/{{form_name}}/validate",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "forms",
+                "{{form_name}}",
+                "validate"
+              ]
+            },
+            "description": "Validates form data without submission."
+          },
+          "response": []
+        },
+        {
+          "name": "Submit Form",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{user_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"John\",\n  \"individual\": {\n    \"dateOfBirth\": \"01/01/1990\",\n    \"gender\": {\n      \"id\": 1\n    }\n  },\n  \"user\": {\n    \"secret\": \"password123\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/forms/{{form_name}}/submit",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "forms",
+                "{{form_name}}",
+                "submit"
+              ]
+            },
+            "description": "Submits form data for processing."
+          },
+          "response": []
+        },
+        {
+          "name": "Check Form Exists",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/forms/{{form_name}}/exists",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "forms",
+                "{{form_name}}",
+                "exists"
+              ]
+            },
+            "description": "Checks if a form configuration exists."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "RSP Attribute Contracts",
+      "description": "APIs for managing RSP attribute contracts.",
+      "item": [
+        {
+          "name": "List RSP Attribute Contracts",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/rsp-attributes?rspId={{rsp_id}}&fieldType=REGISTRATION",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "rsp-attributes"
+              ],
+              "query": [
+                {
+                  "key": "rspId",
+                  "value": "{{rsp_id}}",
+                  "description": "Optional RSP ID filter"
+                },
+                {
+                  "key": "fieldType",
+                  "value": "REGISTRATION",
+                  "description": "Optional field type filter"
+                }
+              ]
+            },
+            "description": "Lists RSP attribute contracts with optional filtering."
+          },
+          "response": []
+        },
+        {
+          "name": "Get RSP Attribute Contract",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/rsp-attributes/{{contract_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "rsp-attributes",
+                "{{contract_id}}"
+              ]
+            },
+            "description": "Retrieves a specific RSP attribute contract by ID."
+          },
+          "response": []
+        },
+        {
+          "name": "Create RSP Attribute Contract",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rspId\": 1,\n  \"fieldType\": \"REGISTRATION\",\n  \"referenceModels\": [\n    \"individual/gender/id\",\n    \"individual/firstName\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/rsp-attributes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "rsp-attributes"
+              ]
+            },
+            "description": "Creates a new RSP attribute contract."
+          },
+          "response": []
+        },
+        {
+          "name": "Update RSP Attribute Contract",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"referenceModels\": [\n    \"individual/gender/id\",\n    \"individual/firstName\",\n    \"individual/lastName\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/rsp-attributes/{{contract_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "rsp-attributes",
+                "{{contract_id}}"
+              ]
+            },
+            "description": "Updates an existing RSP attribute contract."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete RSP Attribute Contract",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/rsp-attributes/{{contract_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "rsp-attributes",
+                "{{contract_id}}"
+              ]
+            },
+            "description": "Deletes an RSP attribute contract."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "RSP Related Attributes",
+      "description": "APIs for managing RSP related attributes.",
+      "item": [
+        {
+          "name": "List RSP Related Attributes",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/rsp-related-attributes?rspId={{rsp_id}}&fieldType=REGISTRATION",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "rsp-related-attributes"
+              ],
+              "query": [
+                {
+                  "key": "rspId",
+                  "value": "{{rsp_id}}",
+                  "description": "Optional RSP ID filter"
+                },
+                {
+                  "key": "fieldType",
+                  "value": "REGISTRATION",
+                  "description": "Optional field type filter"
+                }
+              ]
+            },
+            "description": "Lists RSP related attributes with optional filtering."
+          },
+          "response": []
+        },
+        {
+          "name": "Get RSP Related Attribute",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/rsp-related-attributes/{{related_attr_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "rsp-related-attributes",
+                "{{related_attr_id}}"
+              ]
+            },
+            "description": "Retrieves a specific RSP related attribute by ID."
+          },
+          "response": []
+        },
+        {
+          "name": "Create RSP Related Attribute",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rspId\": 1,\n  \"fieldType\": \"REGISTRATION\",\n  \"referenceModels\": [\n    \"individual/gender/id\",\n    \"individual/firstName\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/rsp-related-attributes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "rsp-related-attributes"
+              ]
+            },
+            "description": "Creates a new RSP related attribute."
+          },
+          "response": []
+        },
+        {
+          "name": "Update RSP Related Attribute",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"referenceModels\": [\n    \"individual/gender/id\",\n    \"individual/firstName\",\n    \"individual/lastName\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/rsp-related-attributes/{{related_attr_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "rsp-related-attributes",
+                "{{related_attr_id}}"
+              ]
+            },
+            "description": "Updates an existing RSP related attribute."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete RSP Related Attribute",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/rsp-related-attributes/{{related_attr_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "rsp-related-attributes",
+                "{{related_attr_id}}"
+              ]
+            },
+            "description": "Deletes an RSP related attribute."
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8080",
+      "type": "string",
+      "description": "Base URL of the dynamic form engine"
+    },
+    {
+      "key": "admin_token",
+      "value": "",
+      "type": "string",
+      "description": "JWT token for admin operations"
+    },
+    {
+      "key": "user_token",
+      "value": "",
+      "type": "string",
+      "description": "JWT token for user operations"
+    },
+    {
+      "key": "form_name",
+      "value": "customer-registration",
+      "type": "string",
+      "description": "Name of the form"
+    },
+    {
+      "key": "version",
+      "value": "1",
+      "type": "string",
+      "description": "Version number for configurations"
+    },
+    {
+      "key": "rsp_id",
+      "value": "1",
+      "type": "string",
+      "description": "RSP ID for contracts"
+    },
+    {
+      "key": "contract_id",
+      "value": "550e8400-e29b-41d4-a716-446655440000",
+      "type": "string",
+      "description": "UUID of RSP attribute contract"
+    },
+    {
+      "key": "related_attr_id",
+      "value": "550e8400-e29b-41d4-a716-446655440001",
+      "type": "string",
+      "description": "UUID of RSP related attribute"
+    }
+  ]
+}
