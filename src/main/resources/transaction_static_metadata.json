@@ -1,0 +1,22 @@
+[
+  {
+    "label": "Transaction Amount",
+    "referenceModel": "transaction/amount"
+  },
+  {
+    "label": "Currency",
+    "referenceModel": "transaction/currency"
+  },
+  {
+    "label": "Purpose of Remittance",
+    "referenceModel": "transaction/purpose"
+  },
+  {
+    "label": "Source of Funds",
+    "referenceModel": "transaction/sourceOfFunds"
+  },
+  {
+    "label": "Payment Method",
+    "referenceModel": "transaction/paymentMethod"
+  }
+]

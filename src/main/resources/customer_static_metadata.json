@@ -24,7 +24,7 @@
     "referenceModel": "individual/address/addressLine1"
   },
   {
-    "label": "First Name",
+    "label": "FirstName",
     "referenceModel": "individual/firstName"
   },
   {

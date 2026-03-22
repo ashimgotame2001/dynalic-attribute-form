@@ -1,0 +1,27 @@
+[
+  {
+    "label": "Supporting Document",
+    "referenceModel": "document",
+    "collection": true
+  },
+  {
+    "label": "Document Type",
+    "referenceModel": "document/documentType/id"
+  },
+  {
+    "label": "Issue Country",
+    "referenceModel": "document/issueCountry/alphaTwoCode"
+  },
+  {
+    "label": "Document Number",
+    "referenceModel": "document/documentNumber"
+  },
+  {
+    "label": "Issue Date",
+    "referenceModel": "document/issueDate"
+  },
+  {
+    "label": "Expiry Date",
+    "referenceModel": "document/expiryDate"
+  }
+]

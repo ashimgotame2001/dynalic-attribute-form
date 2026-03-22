@@ -1,0 +1,26 @@
+[
+  {
+    "label": "Beneficiary First Name",
+    "referenceModel": "beneficiary/firstName"
+  },
+  {
+    "label": "Beneficiary Last Name",
+    "referenceModel": "beneficiary/lastName"
+  },
+  {
+    "label": "Beneficiary Account Number",
+    "referenceModel": "beneficiary/accountNumber"
+  },
+  {
+    "label": "Bank Name",
+    "referenceModel": "beneficiary/bankName"
+  },
+  {
+    "label": "IFSC Code",
+    "referenceModel": "beneficiary/ifscCode"
+  },
+  {
+    "label": "Relationship",
+    "referenceModel": "beneficiary/relationship"
+  }
+]

@@ -6,11 +6,57 @@
   },
   "item": [
     {
+      "name": "Document Forms",
+      "description": "APIs for generating dynamic forms for document types.",
+      "item": [
+        {
+          "name": "Get Document Dynamic Form",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/document-forms?rspId=1&documentId={{document_id}}&service=customer",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "document-forms"
+              ],
+              "query": [
+                {
+                  "key": "rspId",
+                  "value": "1"
+                },
+                {
+                  "key": "documentId",
+                  "value": "{{document_id}}"
+                },
+                {
+                  "key": "service",
+                  "value": "customer",
+                  "description": "The service module (customer, beneficiary, transaction)"
+                }
+              ]
+            },
+            "description": "Generates dynamic form metadata for a specific document type and RSP."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
       "name": "Form Configuration (Admin)",
       "description": "Admin APIs for managing form metadata configurations. Requires admin authentication.",
       "item": [
         {
-          "name": "Create Form Configuration",
+          "name": "Create Customer Form Configuration",
           "request": {
             "method": "POST",
             "header": [
@@ -25,20 +71,89 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"formName\": \"customer-registration\",\n  \"description\": \"Customer registration form\",\n  \"targetDtoClassName\": \"com.example.dynamicform.model.RegisterCustomerRequest\",\n  \"rspId\": 1,\n  \"fields\": [\n    {\n      \"referenceModel\": \"user.secret\",\n      \"visible\": true,\n      \"shortLabel\": \"Secret\",\n      \"longLabel\": \"Enter secret password\",\n      \"validations\": [\n        {\n          \"type\": \"required\",\n          \"value\": true,\n          \"message\": \"Secret is required.\"\n        }\n      ]\n    }\n  ]\n}"
+              "raw": "{\n  \"formName\": \"customer-registration\",\n  \"description\": \"Customer registration form\",\n  \"rspId\": 1,\n  \"fields\": [\n    {\n      \"referenceModel\": \"user/secret\",\n      \"visible\": true,\n      \"shortLabel\": \"Secret\",\n      \"longLabel\": \"Enter secret password\",\n      \"validations\": [\n        {\n          \"type\": \"required\",\n          \"value\": true,\n          \"message\": \"Secret is required.\"\n        }\n      ]\n    },\n    {\n      \"referenceModel\": \"document\",\n      \"visible\": true,\n      \"shortLabel\": \"Supporting Documents\",\n      \"longLabel\": \"Please upload required documents\",\n      \"validations\": [\n        {\n          \"type\": \"minItems\",\n          \"value\": 1,\n          \"message\": \"At least one document is required.\"\n        }\n      ]\n    },\n    {\n      \"referenceModel\": \"document/documentType/id\",\n      \"visible\": true,\n      \"shortLabel\": \"Document Type\"\n    },\n    {\n      \"referenceModel\": \"document/documentNumber\",\n      \"visible\": true,\n      \"shortLabel\": \"Document Number\"\n    }\n  ]\n}"
             },
             "url": {
-              "raw": "{{base_url}}/api/config/forms",
+              "raw": "{{base_url}}/api/config/forms/customer",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
                 "config",
-                "forms"
+                "forms",
+                "customer"
               ]
             },
-            "description": "Creates a new form configuration with field specifications."
+            "description": "Creates a new form configuration for Customer with field specifications."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Beneficiary Form Configuration",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"formName\": \"beneficiary-creation\",\n  \"description\": \"Beneficiary creation form\",\n  \"rspId\": 1,\n  \"fields\": [\n    {\n      \"referenceModel\": \"firstName\",\n      \"visible\": true,\n      \"shortLabel\": \"First Name\"\n    },\n    {\n      \"referenceModel\": \"lastName\",\n      \"visible\": true,\n      \"shortLabel\": \"Last Name\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/config/forms/beneficiary",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "config",
+                "forms",
+                "beneficiary"
+              ]
+            },
+            "description": "Creates a new form configuration for Beneficiary with field specifications."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Transaction Form Configuration",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"formName\": \"transaction-initiation\",\n  \"description\": \"Transaction initiation form\",\n  \"rspId\": 1,\n  \"fields\": [\n    {\n      \"referenceModel\": \"amount\",\n      \"visible\": true,\n      \"shortLabel\": \"Amount\"\n    },\n    {\n      \"referenceModel\": \"currency\",\n      \"visible\": true,\n      \"shortLabel\": \"Currency\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/config/forms/transaction",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "config",
+                "forms",
+                "transaction"
+              ]
+            },
+            "description": "Creates a new form configuration for Transaction with field specifications."
           },
           "response": []
         },
@@ -200,7 +315,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"firstName\": \"John\",\n  \"individual\": {\n    \"dateOfBirth\": \"01/01/1990\",\n    \"gender\": {\n      \"id\": 1\n    }\n  }\n}"
+              "raw": "{\n  \"firstName\": \"John\",\n  \"individual\": {\n    \"dateOfBirth\": \"01/01/1990\",\n    \"gender\": {\n      \"id\": 1\n    }\n  },\n  \"document\": [\n    {\n      \"documentType\": {\n        \"id\": 1\n      },\n      \"documentNumber\": \"ABC12345\"\n    }\n  ]\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/forms/{{form_name}}/validate",
@@ -234,7 +349,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"firstName\": \"John\",\n  \"individual\": {\n    \"dateOfBirth\": \"01/01/1990\",\n    \"gender\": {\n      \"id\": 1\n    }\n  },\n  \"user\": {\n    \"secret\": \"password123\"\n  }\n}"
+              "raw": "{\n  \"firstName\": \"John\",\n  \"individual\": {\n    \"dateOfBirth\": \"01/01/1990\",\n    \"gender\": {\n      \"id\": 1\n    }\n  },\n  \"document\": [\n    {\n      \"documentType\": {\n        \"id\": 1\n      },\n      \"documentNumber\": \"ABC12345\"\n    }\n  ],\n  \"user\": {\n    \"secret\": \"password123\"\n  }\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/forms/{{form_name}}/submit",
@@ -290,7 +405,7 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/rsp-attributes?rspId={{rsp_id}}",
+              "raw": "{{base_url}}/api/rsp-attributes?rspId={{rsp_id}}&module=customer",
               "host": [
                 "{{base_url}}"
               ],
@@ -305,9 +420,9 @@
                   "description": "Optional RSP ID filter"
                 },
                 {
-                  "key": "fieldType",
-                  "value": "REGISTRATION",
-                  "description": "Optional field type filter"
+                  "key": "module",
+                  "value": "customer",
+                  "description": "The service module (customer, beneficiary, transaction)"
                 }
               ]
             },
@@ -356,7 +471,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"rspId\": 1,\n  \"fieldType\": \"REGISTRATION\",\n  \"referenceModels\": [\n    \"individual/gender/id\",\n    \"individual/firstName\"\n  ]\n}"
+              "raw": "{\n  \"rspId\": 1,\n  \"fieldType\": \"REGISTRATION\",\n  \"referenceModels\": [\n    \"individual/gender/id\",\n    \"individual/firstName\",\n    \"document\",\n    \"document/documentType/id\",\n    \"document/documentNumber\"\n  ],\n  \"minPrimaryDocuments\": 1,\n  \"minSecondaryDocuments\": 1\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/rsp-attributes",
@@ -369,6 +484,136 @@
               ]
             },
             "description": "Creates a new RSP attribute contract."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Beneficiary RSP Attribute Contract",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rspId\": 1,\n  \"fieldType\": \"BENEFICIARY\",\n  \"referenceModels\": [\n    \"beneficiary/firstName\",\n    \"beneficiary/lastName\",\n    \"beneficiary/accountNumber\",\n    \"beneficiary/bankName\",\n    \"beneficiary/ifscCode\",\n    \"beneficiary/relationship\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/rsp-attributes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "rsp-attributes"
+              ]
+            },
+            "description": "Creates a new RSP attribute contract for Beneficiary."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Transaction RSP Attribute Contract",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rspId\": 1,\n  \"fieldType\": \"TRANSACTION\",\n  \"referenceModels\": [\n    \"transaction/amount\",\n    \"transaction/currency\",\n    \"transaction/purpose\",\n    \"transaction/sourceOfFunds\",\n    \"transaction/paymentMethod\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/rsp-attributes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "rsp-attributes"
+              ]
+            },
+            "description": "Creates a new RSP attribute contract for Transaction."
+          },
+          "response": []
+        },
+        {
+          "name": "List Beneficiary RSP Attribute Contracts",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/rsp-attributes?rspId={{rsp_id}}&module=beneficiary",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "rsp-attributes"
+              ],
+              "query": [
+                {
+                  "key": "rspId",
+                  "value": "{{rsp_id}}"
+                },
+                {
+                  "key": "module",
+                  "value": "beneficiary"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Transaction RSP Attribute Contracts",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/rsp-attributes?rspId={{rsp_id}}&module=transaction",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "rsp-attributes"
+              ],
+              "query": [
+                {
+                  "key": "rspId",
+                  "value": "{{rsp_id}}"
+                },
+                {
+                  "key": "module",
+                  "value": "transaction"
+                }
+              ]
+            }
           },
           "response": []
         },
@@ -588,6 +833,133 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "RSP Document Setup",
+      "description": "APIs for managing RSP-specific document configurations (primary/secondary, mandatory fields).",
+      "item": [
+        {
+          "name": "List All Document Setups",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/rsp-wise-documents",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "rsp-wise-documents"
+              ]
+            },
+            "description": "Retrieves all RSP document setup configurations."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Document Setup by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/rsp-wise-documents/{{document_setup_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "rsp-wise-documents",
+                "{{document_setup_id}}"
+              ]
+            },
+            "description": "Retrieves a specific RSP document setup by ID."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Document Setup",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"documentId\": \"{{document_id}}\",\n  \"isPrimary\": true,\n  \"rspId\": 1,\n  \"isBackRequired\": true,\n  \"isExpiryDateRequired\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/rsp-wise-documents",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "rsp-wise-documents"
+              ]
+            },
+            "description": "Creates a new RSP document setup configuration."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Document Setup",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"documentId\": \"{{document_id}}\",\n  \"isPrimary\": false,\n  \"rspId\": 1,\n  \"isBackRequired\": false,\n  \"isExpiryDateRequired\": false\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/rsp-wise-documents/{{document_setup_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "rsp-wise-documents",
+                "{{document_setup_id}}"
+              ]
+            },
+            "description": "Updates an existing RSP document setup configuration."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Document Setup",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/rsp-wise-documents/{{document_setup_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "rsp-wise-documents",
+                "{{document_setup_id}}"
+              ]
+            },
+            "description": "Deletes a specific RSP document setup configuration."
+          },
+          "response": []
+        }
+      ]
     }
   ],
   "variable": [
@@ -638,6 +1010,18 @@
       "value": "550e8400-e29b-41d4-a716-446655440001",
       "type": "string",
       "description": "UUID of RSP related attribute"
+    },
+    {
+      "key": "document_id",
+      "value": "550e8400-e29b-41d4-a716-446655440002",
+      "type": "string",
+      "description": "UUID of a Document"
+    },
+    {
+      "key": "document_setup_id",
+      "value": "550e8400-e29b-41d4-a716-446655440003",
+      "type": "string",
+      "description": "UUID of RSP wise document setup"
     }
   ]
 }
