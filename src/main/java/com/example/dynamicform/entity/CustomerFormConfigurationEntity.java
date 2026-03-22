@@ -1,6 +1,5 @@
 package com.example.dynamicform.entity;
 
-import com.example.dynamicform.enums.DynamicFieldFor;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -17,9 +16,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "form_configurations", 
-       uniqueConstraints = @UniqueConstraint(columnNames = {"form_name", "version"}))
-public class FormConfigurationEntity {
+public class CustomerFormConfigurationEntity {
 
      @Id
      @GeneratedValue(strategy = GenerationType.AUTO)
@@ -66,7 +63,5 @@ public class FormConfigurationEntity {
     @Column(name = "optimistic_lock_version")
     private Integer optimisticLockVersion = 0;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "field_type")
-    private DynamicFieldFor fieldType;
+
 }

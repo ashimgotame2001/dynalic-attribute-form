@@ -25,7 +25,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"formName\": \"customer-registration\",\n  \"description\": \"Customer registration form\",\n  \"targetDtoClassName\": \"com.example.dynamicform.model.RegisterCustomerRequest\",\n  \"rspId\": 1,\n  \"fieldType\": \"REGISTRATION\",\n  \"fields\": [\n    {\n      \"referenceModel\": \"user.secret\",\n      \"visible\": true,\n      \"shortLabel\": \"Secret\",\n      \"longLabel\": \"Enter secret password\",\n      \"validations\": [\n        {\n          \"type\": \"required\",\n          \"value\": true,\n          \"message\": \"Secret is required.\"\n        }\n      ]\n    }\n  ]\n}"
+              "raw": "{\n  \"formName\": \"customer-registration\",\n  \"description\": \"Customer registration form\",\n  \"targetDtoClassName\": \"com.example.dynamicform.model.RegisterCustomerRequest\",\n  \"rspId\": 1,\n  \"fields\": [\n    {\n      \"referenceModel\": \"user.secret\",\n      \"visible\": true,\n      \"shortLabel\": \"Secret\",\n      \"longLabel\": \"Enter secret password\",\n      \"validations\": [\n        {\n          \"type\": \"required\",\n          \"value\": true,\n          \"message\": \"Secret is required.\"\n        }\n      ]\n    }\n  ]\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/config/forms",
@@ -65,9 +65,8 @@
               ],
               "query": [
                 {
-                  "key": "version",
-                  "value": "{{version}}",
-                  "description": "Optional version number"
+                  "key": "rspId",
+                  "value": "{{rsp_id}}"
                 }
               ]
             },
@@ -171,7 +170,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"rspId\": 1,\n  \"fieldType\": \"REGISTRATION\",\n  \"attributes\": {\n    \"firstName\": \"John\",\n    \"email\": \"john@example.com\"\n  }\n}"
+              "raw": "{\n  \"rspId\": 1,\n  \"attributes\": {\n    \"firstName\": \"John\",\n    \"email\": \"john@example.com\"\n  }\n}"
             },
             "url": {
               "raw": "{{base_url}}/api/forms/{{form_name}}/config",
@@ -291,7 +290,7 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/rsp-attributes?rspId={{rsp_id}}&fieldType=REGISTRATION",
+              "raw": "{{base_url}}/api/rsp-attributes?rspId={{rsp_id}}",
               "host": [
                 "{{base_url}}"
               ],

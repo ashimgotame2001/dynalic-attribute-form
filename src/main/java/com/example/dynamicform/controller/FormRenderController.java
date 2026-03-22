@@ -50,9 +50,7 @@ public class FormRenderController {
     public ResponseEntity<RawFormMetadata> getCustomForm(@PathVariable String formName, @RequestBody DynamicFormConfigRequest request) {
         FormDefinition baseForm = dynamicFormEngine.getFormDefinition(formName);
         RawFormMetadata baseRaw = baseForm.getRawMetadata();
-        List<RSPAttributeContractResponse> enabledAttributes = request.getFieldType() != null
-                ? rspAttributeContractService.findByRspIdAndFieldType(request.getRspId(), request.getFieldType())
-                : rspAttributeContractService.findByRspId(request.getRspId());
+        List<RSPAttributeContractResponse> enabledAttributes = rspAttributeContractService.findByRspId(request.getRspId());
         Set<String> enabledReferenceModels = enabledAttributes.stream()
                 .map(RSPAttributeContractResponse::getReferenceModel)
                 .collect(java.util.stream.Collectors.toSet());

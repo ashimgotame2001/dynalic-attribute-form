@@ -13,9 +13,8 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Entity(name = "rsp_attribute_contract")
-@Table(name = "rsp_attribute_contract", uniqueConstraints = @UniqueConstraint(columnNames = {"rsp_id", "field_type"}))
-public class RSPAttributeContractEntity {
+@Entity(name = "customer_rsp_attribute_contract")
+public class CustomerRSPAttributeContractEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(name = "id", nullable = false, updatable = false)
@@ -24,9 +23,6 @@ public class RSPAttributeContractEntity {
     @Column(name = "rsp_id", nullable = false)
     private Long rspId;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "field_type")
-    private DynamicFieldFor fieldType;
 
     private boolean gender;
     private boolean nationality;
@@ -42,5 +38,6 @@ public class RSPAttributeContractEntity {
     private boolean email;
     private boolean secret;
     private boolean referralCode;
+    private boolean primaryDocument;
 }
 

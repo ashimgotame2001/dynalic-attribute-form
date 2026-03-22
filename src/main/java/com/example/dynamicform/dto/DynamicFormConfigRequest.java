@@ -13,6 +13,5 @@ import java.util.Map;
 @Builder
 public class DynamicFormConfigRequest {
     private Long rspId;
-    private com.example.dynamicform.enums.DynamicFieldFor fieldType;
     private Map<String, Object> attributes;
 }

@@ -3,7 +3,7 @@ package com.example.dynamicform.service;
 import com.example.dynamicform.dto.RSPAttributeContractCreateRequest;
 import com.example.dynamicform.dto.RSPAttributeContractRequest;
 import com.example.dynamicform.dto.RSPAttributeContractResponse;
-import com.example.dynamicform.entity.RSPAttributeContractEntity;
+import com.example.dynamicform.entity.CustomerRSPAttributeContractEntity;
 import com.example.dynamicform.repository.RSPAttributeContractRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -44,11 +44,7 @@ public class RSPAttributeContractService {
                 .toList();
     }
 
-    public List<RSPAttributeContractResponse> findByRspIdAndFieldType(Long rspId, com.example.dynamicform.enums.DynamicFieldFor fieldType) {
-        return repository.findByRspIdAndFieldType(rspId, fieldType)
-                .map(this::toResponses)
-                .orElse(List.of());
-    }
+
 
     public Optional<RSPAttributeContractResponse> findById(UUID id) {
         return repository.findById(id)
@@ -61,11 +57,10 @@ public class RSPAttributeContractService {
     @Transactional
     public List<RSPAttributeContractResponse> create(RSPAttributeContractCreateRequest request) {
         Long rspId = request.getRspId();
-        com.example.dynamicform.enums.DynamicFieldFor fieldType = request.getFieldType();
         List<String> refs = request.getReferenceModels();
 
-        RSPAttributeContractEntity entity = repository.findByRspIdAndFieldType(rspId, fieldType)
-                .orElseGet(() -> RSPAttributeContractEntity.builder().rspId(rspId).fieldType(fieldType).build());
+        CustomerRSPAttributeContractEntity entity = repository.findByRspId(rspId).stream().findFirst().orElse(
+                CustomerRSPAttributeContractEntity.builder().rspId(rspId).build());
 
         // Reset all flags to false, then enable only requested ones
         entity.setGender(false);
@@ -101,13 +96,12 @@ public class RSPAttributeContractService {
                     case "user/secret" -> entity.setSecret(true);
                     case "referral/referralCode" -> entity.setReferralCode(true);
                     default -> {
-                        // ignore unknown referenceModels
                     }
                 }
             }
         }
 
-        RSPAttributeContractEntity saved = repository.save(entity);
+        CustomerRSPAttributeContractEntity saved = repository.save(entity);
         return toResponses(saved);
     }
 
@@ -128,7 +122,7 @@ public class RSPAttributeContractService {
         repository.deleteById(id);
     }
 
-    private List<RSPAttributeContractResponse> toResponses(RSPAttributeContractEntity entity) {
+    private List<RSPAttributeContractResponse> toResponses(CustomerRSPAttributeContractEntity entity) {
         List<RSPAttributeContractResponse> result = new ArrayList<>();
 
         addIfTrue(result, entity.isGender(), entity, "individual/gender/id");
@@ -151,7 +145,7 @@ public class RSPAttributeContractService {
 
     private void addIfTrue(List<RSPAttributeContractResponse> target,
                            boolean flag,
-                           RSPAttributeContractEntity entity,
+                           CustomerRSPAttributeContractEntity entity,
                            String referenceModel) {
         if (!flag) {
             return;
@@ -160,7 +154,6 @@ public class RSPAttributeContractService {
                 RSPAttributeContractResponse.builder()
                         .id(entity.getId())
                         .rspId(entity.getRspId())
-                        .fieldType(entity.getFieldType())
                         .referenceModel(referenceModel)
                         .label(resolveLabel(referenceModel))
                         .build()

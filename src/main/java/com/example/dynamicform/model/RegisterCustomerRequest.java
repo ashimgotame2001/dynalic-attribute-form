@@ -3,6 +3,8 @@ package com.example.dynamicform.model;
 import jakarta.validation.Valid;
 import lombok.Data;
 
+import java.util.List;
+
 @Data
 public class RegisterCustomerRequest {
 
@@ -11,6 +13,6 @@ public class RegisterCustomerRequest {
     @Valid
     private Individual individual;
     private Referral referral;
-    private SupportingDocument document;
+    private List<SupportingDocument> document;
 
 }

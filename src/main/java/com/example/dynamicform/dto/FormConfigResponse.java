@@ -1,8 +1,7 @@
 package com.example.dynamicform.dto;
 
 import com.example.dynamicform.dto.metadata.RawFormMetadata;
-import com.example.dynamicform.entity.FormConfigurationEntity;
-import com.example.dynamicform.enums.DynamicFieldFor;
+import com.example.dynamicform.entity.CustomerFormConfigurationEntity;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -23,13 +22,13 @@ public class FormConfigResponse {
     private String description;
     private String targetDtoClassName;
     private Long rspId;
-    private DynamicFieldFor fieldType;
+
     private Boolean isActive;
     private RawFormMetadata metadata;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    public static FormConfigResponse fromEntity(FormConfigurationEntity entity) {
+    public static FormConfigResponse fromEntity(CustomerFormConfigurationEntity entity) {
         try {
             com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
             RawFormMetadata metadata = mapper.readValue(entity.getMetadataJson(), RawFormMetadata.class);
@@ -39,7 +38,6 @@ public class FormConfigResponse {
                     .description(entity.getDescription())
                     .targetDtoClassName(entity.getTargetDtoClassName())
                     .rspId(entity.getRspId())
-                    .fieldType(entity.getFieldType())
                     .isActive(entity.getIsActive())
                     .metadata(metadata)
                     .createdAt(entity.getCreatedAt())

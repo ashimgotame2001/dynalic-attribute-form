@@ -1,6 +1,6 @@
 package com.example.dynamicform.repository;
 
-import com.example.dynamicform.entity.RSPAttributeContractEntity;
+import com.example.dynamicform.entity.CustomerRSPAttributeContractEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -9,10 +9,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public interface RSPAttributeContractRepository extends JpaRepository<RSPAttributeContractEntity, UUID> {
+public interface RSPAttributeContractRepository extends JpaRepository<CustomerRSPAttributeContractEntity, UUID> {
 
-    List<RSPAttributeContractEntity> findByRspId(Long rspId);
+    List<CustomerRSPAttributeContractEntity> findByRspId(Long rspId);
 
-    Optional<RSPAttributeContractEntity> findByRspIdAndFieldType(Long rspId, com.example.dynamicform.enums.DynamicFieldFor fieldType);
 }
 

@@ -23,11 +23,8 @@ public class RSPAttributeContractController {
 
     @GetMapping
     public List<RSPAttributeContractResponse> list(
-            @RequestParam(value = "rspId", required = false) Long rspId,
-            @RequestParam(value = "fieldType", required = false) com.example.dynamicform.enums.DynamicFieldFor fieldType) {
-        if (rspId != null && fieldType != null) {
-            return service.findByRspIdAndFieldType(rspId, fieldType);
-        }
+            @RequestParam(value = "rspId", required = false) Long rspId
+          ) {
         if (rspId != null) {
             return service.findByRspId(rspId);
         }

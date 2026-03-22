@@ -1,6 +1,6 @@
 package com.example.dynamicform.repository;
 
-import com.example.dynamicform.entity.FormConfigurationEntity;
+import com.example.dynamicform.entity.CustomerFormConfigurationEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -9,16 +9,16 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface FormConfigurationRepository extends JpaRepository<FormConfigurationEntity, java.util.UUID> {
+public interface FormConfigurationRepository extends JpaRepository<CustomerFormConfigurationEntity, java.util.UUID> {
 
-    Optional<FormConfigurationEntity> findByFormNameAndVersion(String formName, Integer version);
+    Optional<CustomerFormConfigurationEntity> findByFormNameAndVersion(String formName, Integer version);
 
-    Optional<FormConfigurationEntity> findFirstByFormNameOrderByVersionDesc(String formName);
+    Optional<CustomerFormConfigurationEntity> findFirstByFormNameOrderByVersionDesc(String formName);
 
-    List<FormConfigurationEntity> findByFormNameOrderByVersionDesc(String formName);
+    List<CustomerFormConfigurationEntity> findByFormNameOrderByVersionDesc(String formName);
 
     boolean existsByFormName(String formName);
 
-    @Query("SELECT f FROM FormConfigurationEntity f WHERE f.formName = :formName AND f.isActive = true ORDER BY f.version DESC")
-    Optional<FormConfigurationEntity> findLatestActiveByFormName(String formName);
+    @Query("SELECT f FROM CustomerFormConfigurationEntity f WHERE f.formName = :formName AND f.isActive = true ORDER BY f.version DESC")
+    Optional<CustomerFormConfigurationEntity> findLatestActiveByFormName(String formName);
 }

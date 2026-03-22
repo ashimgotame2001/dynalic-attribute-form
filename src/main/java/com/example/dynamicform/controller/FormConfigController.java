@@ -5,19 +5,17 @@ import com.example.dynamicform.dto.FormConfigResponse;
 import com.example.dynamicform.dto.RSPAttributeContractResponse;
 import com.example.dynamicform.dto.metadata.RawFormMetadata;
 import com.example.dynamicform.engine.DynamicFormEngine;
-import com.example.dynamicform.entity.FormConfigurationEntity;
+import com.example.dynamicform.entity.CustomerFormConfigurationEntity;
 import com.example.dynamicform.exception.FormNotFoundException;
 import com.example.dynamicform.interpreter.DtoIntrospector;
 import com.example.dynamicform.service.FormConfigService;
 import com.example.dynamicform.service.RSPAttributeContractService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -41,7 +39,7 @@ public class FormConfigController {
             Class<?> targetClass = Class.forName(request.getTargetDtoClassName());
 
             // Get enabled reference models from RSP contracts
-            List<RSPAttributeContractResponse> contracts = rspAttributeContractService.findByRspIdAndFieldType(request.getRspId(), request.getFieldType());
+            List<RSPAttributeContractResponse> contracts = rspAttributeContractService.findByRspId(request.getRspId());
             Set<String> enabledReferenceModels = contracts.stream()
                     .map(c -> c.getReferenceModel().replace(".", "/"))
                     .collect(java.util.stream.Collectors.toSet());
@@ -61,8 +59,7 @@ public class FormConfigController {
                     metadataJson,
                     request.getDescription(),
                     request.getTargetDtoClassName(),
-                    request.getRspId(),
-                    request.getFieldType()
+                    request.getRspId()
             );
 
             FormConfigResponse response = FormConfigResponse.fromEntity(entity);
@@ -97,8 +94,8 @@ public class FormConfigController {
         // Group by formName and get latest version for each (since repository returns all)
         var latestByForm = all.stream()
                 .collect(java.util.stream.Collectors.groupingBy(
-                        com.example.dynamicform.entity.FormConfigurationEntity::getFormName,
-                        java.util.stream.Collectors.maxBy(java.util.Comparator.comparing(com.example.dynamicform.entity.FormConfigurationEntity::getVersion))
+                        CustomerFormConfigurationEntity::getFormName,
+                        java.util.stream.Collectors.maxBy(java.util.Comparator.comparing(CustomerFormConfigurationEntity::getVersion))
                 ))
                 .values().stream()
                 .filter(java.util.Optional::isPresent)

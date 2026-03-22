@@ -1,5 +1,6 @@
 package com.example.dynamicform.dto;
 
+import com.example.dynamicform.enums.ContractFor;
 import com.example.dynamicform.enums.DynamicFieldFor;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -17,7 +18,6 @@ public class FieldSpecRequest {
 
     private String formName;
 
-    private DynamicFieldFor fieldType;
 
     private List<FieldSpec> fields;
 
@@ -52,6 +52,7 @@ public class FieldSpecRequest {
         private Object validations;
     }
 
+
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
@@ -69,8 +70,7 @@ public class FieldSpecRequest {
 
 
         private String longLabel;
-
-
+        private String expression;
         private Object validations;
     }
 

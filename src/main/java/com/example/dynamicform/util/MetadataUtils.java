@@ -13,10 +13,7 @@ public final class MetadataUtils {
         throw new UnsupportedOperationException("Utility class");
     }
 
-    /**
-     * Converts camelCase or kebab-case to a human-readable label.
-     * Example: "firstName" -> "First Name", "postalCode" -> "Postal Code"
-     */
+
     public static String toLabel(String input) {
         if (!StringUtils.hasText(input)) {
             return "";
