@@ -1,10 +1,19 @@
 package com.example.dynamicform.product.service;
 
 import com.example.dynamicform.platform.dto.FieldSpecRequest;
+import com.example.dynamicform.platform.dto.DynamicMetadataBuildRequest;
+import com.example.dynamicform.platform.dto.FormConfigResponse;
+import com.example.dynamicform.platform.dto.metadata.RawFormMetadata;
+import com.example.dynamicform.platform.service.ResponseLocalizationService;
+import com.example.dynamicform.product.dto.FormConfigTranslationRequest;
 import com.example.dynamicform.product.entity.CustomerFormConfigurationEntity;
+import com.example.dynamicform.product.entity.FormConfigFieldEntity;
+import com.example.dynamicform.product.entity.FormConfigFieldTranslationEntity;
+import com.example.dynamicform.product.entity.FormConfigFieldValidationEntity;
+import com.example.dynamicform.product.entity.FormConfigFieldValidationTranslationEntity;
 import com.example.dynamicform.product.repository.FormConfigurationRepository;
 import com.example.dynamicform.product.repository.RSPWiseDocumentSetupRepository;
-import com.example.dynamicform.platform.interpreter.DtoIntrospector;
+import com.example.dynamicform.platform.service.DynamicMetadataBuildService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,28 +22,43 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
 public class FormConfigService {
 
     private static final Logger logger = LoggerFactory.getLogger(FormConfigService.class);
+    private static final String CUSTOMER_METADATA_PATH = "customer_static_metadata.json";
+    private static final String BENEFICIARY_METADATA_PATH = "beneficiary_static_metadata.json";
+    private static final String TRANSACTION_METADATA_PATH = "transaction_static_metadata.json";
+    private static final String DOCUMENT_METADATA_PATH = "document_metadata.json";
 
     private final FormConfigurationRepository repository;
     private final ObjectMapper objectMapper;
     private final RSPAttributeContractService rspAttributeContractService;
-    private final com.example.dynamicform.platform.interpreter.DtoIntrospector dtoIntrospector;
+    private final DynamicMetadataBuildService dynamicMetadataBuildService;
+    private final FormConfigFieldAdapter formConfigFieldAdapter;
+    private final FormConfigMetadataResolver formConfigMetadataResolver;
+    private final ResponseLocalizationService responseLocalizationService;
     private final com.example.dynamicform.product.repository.RSPWiseDocumentSetupRepository rspWiseDocumentSetupRepository;
 
     public FormConfigService(FormConfigurationRepository repository, 
                                ObjectMapper objectMapper, 
                                RSPAttributeContractService rspAttributeContractService,
-                               com.example.dynamicform.platform.interpreter.DtoIntrospector dtoIntrospector,
+                               DynamicMetadataBuildService dynamicMetadataBuildService,
+                               FormConfigFieldAdapter formConfigFieldAdapter,
+                               FormConfigMetadataResolver formConfigMetadataResolver,
+                               ResponseLocalizationService responseLocalizationService,
                                com.example.dynamicform.product.repository.RSPWiseDocumentSetupRepository rspWiseDocumentSetupRepository) {
         this.repository = repository;
         this.objectMapper = objectMapper;
         this.rspAttributeContractService = rspAttributeContractService;
-        this.dtoIntrospector = dtoIntrospector;
+        this.dynamicMetadataBuildService = dynamicMetadataBuildService;
+        this.formConfigFieldAdapter = formConfigFieldAdapter;
+        this.formConfigMetadataResolver = formConfigMetadataResolver;
+        this.responseLocalizationService = responseLocalizationService;
         this.rspWiseDocumentSetupRepository = rspWiseDocumentSetupRepository;
     }
 
@@ -62,28 +86,102 @@ public class FormConfigService {
         return repository.findByFormNameAndVersion(formName, version).orElse(null);
     }
 
+    public FormConfigResponse buildResponse(CustomerFormConfigurationEntity entity, String language) {
+        RawFormMetadata metadata = language == null || language.isBlank()
+                ? formConfigMetadataResolver.resolve(entity)
+                : formConfigMetadataResolver.resolveWithTranslations(loadDetailedConfiguration(entity.getId()));
+        return FormConfigResponse.builder()
+                .formName(entity.getFormName())
+                .version(entity.getVersion())
+                .description(entity.getDescription())
+                .rspId(entity.getRspId())
+                .isActive(entity.getIsActive())
+                .metadata(responseLocalizationService.prepareRawMetadataResponse(metadata, language))
+                .targetDtoClassName(metadata != null ? metadata.getTargetClassName() : null)
+                .createdAt(entity.getCreatedAt())
+                .updatedAt(entity.getUpdatedAt())
+                .build();
+    }
+
+    public RawFormMetadata resolveMetadata(CustomerFormConfigurationEntity entity) {
+        return formConfigMetadataResolver.resolve(entity);
+    }
+
+    @CacheEvict(value = "formDefinitions", key = "#request.formName")
+    @Transactional
+    public CustomerFormConfigurationEntity updateTranslations(FormConfigTranslationRequest request) {
+        CustomerFormConfigurationEntity entity = resolveTranslationTarget(request.getFormName(), request.getVersion());
+        Map<String, FormConfigFieldEntity> fieldsByReferenceModel = new LinkedHashMap<>();
+        for (FormConfigFieldEntity fieldConfig : entity.getFieldConfigs()) {
+            if (fieldConfig.getReferenceModel() != null) {
+                fieldsByReferenceModel.put(fieldConfig.getReferenceModel(), fieldConfig);
+            }
+        }
+
+        if (request.getFields() != null) {
+            for (FormConfigTranslationRequest.FieldTranslation fieldTranslation : request.getFields()) {
+                if (fieldTranslation == null || fieldTranslation.getReferenceModel() == null) {
+                    continue;
+                }
+                FormConfigFieldEntity fieldEntity = fieldsByReferenceModel.get(fieldTranslation.getReferenceModel());
+                if (fieldEntity == null) {
+                    continue;
+                }
+                mergeFieldTranslations(fieldEntity, fieldTranslation);
+            }
+        }
+
+        entity.setMetadataJson(formConfigMetadataResolver.toMetadataJson(entity));
+        return repository.save(entity);
+    }
+
     @CacheEvict(value = "formDefinitions", key = "#request.formName")
     @Transactional
     public CustomerFormConfigurationEntity createOrUpdateConfiguration(FieldSpecRequest request, Class<?> targetClass) {
-        return generateMetaData(request, "customer", targetClass);
+        return generateMetaData(request, "customer", targetClass, CUSTOMER_METADATA_PATH, "Customer Management");
     }
 
     @Transactional
     public CustomerFormConfigurationEntity generateMetaDataForCustomer(FieldSpecRequest request, Class<?> targetClass) {
-        return generateMetaData(request, "customer", targetClass);
+        return generateMetaData(request, "customer", targetClass, CUSTOMER_METADATA_PATH, "Customer Management");
     }
 
     @Transactional
     public CustomerFormConfigurationEntity generateMetaDataForBeneficiary(FieldSpecRequest request, Class<?> targetClass) {
-        return generateMetaData(request, "beneficiary", targetClass);
+        return generateMetaData(request, "beneficiary", targetClass, BENEFICIARY_METADATA_PATH, "Beneficiary Management");
     }
 
     @Transactional
     public CustomerFormConfigurationEntity generateMetaDataForTransaction(FieldSpecRequest request, Class<?> targetClass) {
-        return generateMetaData(request, "transaction", targetClass);
+        return generateMetaData(request, "transaction", targetClass, TRANSACTION_METADATA_PATH, "Transaction Management");
     }
 
-    private CustomerFormConfigurationEntity generateMetaData(FieldSpecRequest request, String module, Class<?> targetClass) {
+    public CustomerFormConfigurationEntity generateGenericMetaData(FieldSpecRequest request,
+                                                                  String targetClassName,
+                                                                  String staticMetadataPath,
+                                                                  String moduleName,
+                                                                  String artifactName) {
+        return generateMetaData(request, moduleName != null ? moduleName : "generic",
+                targetClassName,
+                staticMetadataPath,
+                artifactName,
+                moduleName != null ? moduleName : "Dynamic Form");
+    }
+
+    private CustomerFormConfigurationEntity generateMetaData(FieldSpecRequest request,
+                                                             String module,
+                                                             Class<?> targetClass,
+                                                             String staticMetadataPath,
+                                                             String moduleName) {
+        return generateMetaData(request, module, targetClass.getName(), staticMetadataPath, request.getFormName(), moduleName);
+    }
+
+    private CustomerFormConfigurationEntity generateMetaData(FieldSpecRequest request,
+                                                             String module,
+                                                             String targetClassName,
+                                                             String staticMetadataPath,
+                                                             String artifactName,
+                                                             String moduleName) {
         String formName = request.getFormName();
         Long rspId = request.getRspId();
 
@@ -95,13 +193,17 @@ public class FormConfigService {
                     .map(c -> c.getReferenceModel().replace(".", "/"))
                     .collect(java.util.stream.Collectors.toSet());
 
-            // Build RawFormMetadata by introspecting the DTO and field specs
-            com.example.dynamicform.platform.dto.metadata.RawFormMetadata metadata = dtoIntrospector.buildMetadata(
-                    request.getFields(),
-                    formName,
-                    targetClass,
-                    enabledReferenceModels,
-                    null
+            com.example.dynamicform.platform.dto.metadata.RawFormMetadata metadata = dynamicMetadataBuildService.build(
+                    DynamicMetadataBuildRequest.builder()
+                            .formName(formName)
+                            .moduleName(moduleName)
+                            .artifactName(artifactName)
+                            .targetClassName(targetClassName)
+                            .staticMetadataPath(staticMetadataPath)
+                            .fallbackStaticMetadataPaths(java.util.List.of(DOCUMENT_METADATA_PATH))
+                            .fields(request.getFields())
+                            .enabledReferenceModels(enabledReferenceModels)
+                            .build()
             );
 
             // Enhance document collection metadata with RSP-specific primary/secondary counts
@@ -137,13 +239,9 @@ public class FormConfigService {
                                     rule.put("minSecondaryDocuments", params);
                                     validations.add(rule);
                                 }
-                            });
+                    });
                 }
             }
-
-            // Resolve labels based on module metadata
-            metadata.getDomainModel().getAttributes().forEach(attr -> resolveLabelsRecursive(attr, module));
-            metadata.setTargetClassName(targetClass.getName());
 
             String metadataJson = objectMapper.writeValueAsString(metadata);
 
@@ -154,10 +252,16 @@ public class FormConfigService {
                     .formName(formName)
                     .version(newVersion)
                     .metadataJson(metadataJson)
+                    .targetClassName(targetClassName)
+                    .moduleName(moduleName)
+                    .artifactName(artifactName)
+                    .staticMetadataPath(staticMetadataPath)
                     .description(request.getDescription())
                     .rspId(rspId)
                     .isActive(true)
+                    .fieldConfigs(new java.util.LinkedHashSet<>())
                     .build();
+            entity.getFieldConfigs().addAll(formConfigFieldAdapter.toEntities(entity, request.getFields()));
 
             if (latestOpt.isPresent()) {
                 CustomerFormConfigurationEntity previous = latestOpt.get();
@@ -169,25 +273,6 @@ public class FormConfigService {
             return saved;
         } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
             throw new IllegalArgumentException("Failed to serialize metadata for " + formName, e);
-        }
-    }
-
-    private void resolveLabelsRecursive(com.example.dynamicform.platform.dto.metadata.RawDomainAttribute attr, String module) {
-        if (attr.getReferenceModel() != null) {
-            String resolvedLabel = rspAttributeContractService.resolveLabel(attr.getReferenceModel(), module);
-            if (resolvedLabel != null && !resolvedLabel.isBlank()) {
-                // User requirement: If it's a reference/object, it doesn't need shortLabel or longLabel
-                if (Boolean.TRUE.equals(attr.getReference()) || Boolean.TRUE.equals(attr.getAssociation())) {
-                    attr.setShortLabel(null);
-                    attr.setLongLabel(null);
-                } else {
-                    attr.setShortLabel(resolvedLabel);
-                    attr.setLongLabel(resolvedLabel);
-                }
-            }
-        }
-        if (attr.getDomainModel() != null && attr.getDomainModel().getAttributes() != null) {
-            attr.getDomainModel().getAttributes().forEach(child -> resolveLabelsRecursive(child, module));
         }
     }
 
@@ -207,5 +292,105 @@ public class FormConfigService {
 
     public boolean existsByFormName(String formName) {
         return repository.existsByFormName(formName);
+    }
+
+    private CustomerFormConfigurationEntity resolveTranslationTarget(String formName, Integer version) {
+        if (version != null && version > 0) {
+            return repository.findDetailedByFormNameAndVersion(formName, version)
+                    .orElseThrow(() -> new IllegalArgumentException("Form configuration not found for " + formName + " version " + version));
+        }
+        return repository.findDetailedLatestActiveByFormName(formName)
+                .orElseThrow(() -> new IllegalArgumentException("Active form configuration not found for " + formName));
+    }
+
+    private CustomerFormConfigurationEntity loadDetailedConfiguration(java.util.UUID id) {
+        return repository.findDetailedById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Form configuration not found with id " + id));
+    }
+
+    private void mergeFieldTranslations(FormConfigFieldEntity fieldEntity,
+                                        FormConfigTranslationRequest.FieldTranslation fieldTranslation) {
+        Map<String, FormConfigFieldTranslationEntity> translationsByLocale = new LinkedHashMap<>();
+        for (FormConfigFieldTranslationEntity translation : fieldEntity.getTranslations()) {
+            if (translation.getLocale() != null) {
+                translationsByLocale.put(translation.getLocale(), translation);
+            }
+        }
+        mergeLabelTranslations(fieldEntity, translationsByLocale, fieldTranslation.getShortLabelI18n(), true);
+        mergeLabelTranslations(fieldEntity, translationsByLocale, fieldTranslation.getLongLabelI18n(), false);
+
+        if (fieldTranslation.getValidations() == null) {
+            return;
+        }
+        Map<String, FormConfigFieldValidationEntity> validationsByType = new LinkedHashMap<>();
+        for (FormConfigFieldValidationEntity validation : fieldEntity.getValidations()) {
+            if (validation.getValidationType() != null) {
+                validationsByType.put(validation.getValidationType(), validation);
+            }
+        }
+        for (FormConfigTranslationRequest.ValidationTranslation validationTranslation : fieldTranslation.getValidations()) {
+            if (validationTranslation == null || validationTranslation.getType() == null) {
+                continue;
+            }
+            FormConfigFieldValidationEntity validationEntity = validationsByType.get(validationTranslation.getType());
+            if (validationEntity == null) {
+                continue;
+            }
+            mergeValidationTranslations(validationEntity, validationTranslation.getMessageI18n());
+        }
+    }
+
+    private void mergeLabelTranslations(FormConfigFieldEntity fieldEntity,
+                                        Map<String, FormConfigFieldTranslationEntity> translationsByLocale,
+                                        Map<String, String> values,
+                                        boolean shortLabel) {
+        if (values == null || values.isEmpty()) {
+            return;
+        }
+        for (Map.Entry<String, String> entry : values.entrySet()) {
+            if (entry.getKey() == null || entry.getKey().isBlank()) {
+                continue;
+            }
+            FormConfigFieldTranslationEntity translation = translationsByLocale.computeIfAbsent(entry.getKey(), locale -> {
+                FormConfigFieldTranslationEntity created = FormConfigFieldTranslationEntity.builder()
+                        .field(fieldEntity)
+                        .locale(locale)
+                        .build();
+                fieldEntity.getTranslations().add(created);
+                return created;
+            });
+            if (shortLabel) {
+                translation.setShortLabel(entry.getValue());
+            } else {
+                translation.setLongLabel(entry.getValue());
+            }
+        }
+    }
+
+    private void mergeValidationTranslations(FormConfigFieldValidationEntity validationEntity,
+                                             Map<String, String> messageI18n) {
+        if (messageI18n == null || messageI18n.isEmpty()) {
+            return;
+        }
+        Map<String, FormConfigFieldValidationTranslationEntity> translationsByLocale = new LinkedHashMap<>();
+        for (FormConfigFieldValidationTranslationEntity translation : validationEntity.getTranslations()) {
+            if (translation.getLocale() != null) {
+                translationsByLocale.put(translation.getLocale(), translation);
+            }
+        }
+        for (Map.Entry<String, String> entry : messageI18n.entrySet()) {
+            if (entry.getKey() == null || entry.getKey().isBlank()) {
+                continue;
+            }
+            FormConfigFieldValidationTranslationEntity translation = translationsByLocale.computeIfAbsent(entry.getKey(), locale -> {
+                FormConfigFieldValidationTranslationEntity created = FormConfigFieldValidationTranslationEntity.builder()
+                        .validation(validationEntity)
+                        .locale(locale)
+                        .build();
+                validationEntity.getTranslations().add(created);
+                return created;
+            });
+            translation.setMessage(entry.getValue());
+        }
     }
 }

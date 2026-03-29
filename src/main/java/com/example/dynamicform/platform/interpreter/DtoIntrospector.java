@@ -39,12 +39,13 @@ public class DtoIntrospector {
             }
             processedReferenceModels.add(refModel);
 
-            String[] segments = spec.getReferenceModel().split("/");
-            if (segments.length == 0) {
-                continue;
-            }
+        String[] segments = spec.getReferenceModel().split("/");
+        if (segments.length == 0) {
+            continue;
+        }
+        List<Map<String, Object>> normalizedValidations = normalizeValidations(spec.getValidations());
 
-            String topLevelName = segments[0];
+        String topLevelName = segments[0];
 
             try {
                 Field topField = targetClass.getDeclaredField(topLevelName);
@@ -54,25 +55,30 @@ public class DtoIntrospector {
 
                 boolean isReference = !isCollection && isComplexType(topFieldType);
                 boolean visible = (enabledReferenceModels == null) ? (spec.getVisible() != null ? spec.getVisible() : true) : (requestAttributes != null && requestAttributes.containsKey(topLevelName));
+                String topLevelReferenceModel = topLevelName;
 
                 RawDomainAttribute.RawDomainAttributeBuilder builder = RawDomainAttribute.builder()
                         .attributeType(elementClass != null ? elementClass.getSimpleName() : topFieldType.getSimpleName())
                         .attributeName(topLevelName)
-                        .referenceModel(buildReferenceModel(rootModelName, topLevelName, isReference, elementClass != null ? elementClass : topFieldType))
+                        .referenceModel(topLevelReferenceModel)
                         .reference(isReference)
                         .collection(isCollection)
                         .visible(visible);
 
+                if (!isReference) {
+                    builder.shortLabel(spec.getShortLabel() != null ? spec.getShortLabel() : "");
+                    builder.shortLabelI18n(spec.getShortLabelI18n());
+                    builder.longLabel(spec.getLongLabel() != null ? spec.getLongLabel() : "");
+                    builder.longLabelI18n(spec.getLongLabelI18n());
+                }
+
                 RawDomainAttribute topLevelAttr = topLevelFields.computeIfAbsent(topLevelName, k -> builder.build());
 
-                String parentRefModel = elementClass != null ? elementClass.getSimpleName() : topFieldType.getSimpleName();
-
                 if (segments.length > 1) {
-                    buildNestedFields(topLevelAttr, Arrays.copyOfRange(segments, 1, segments.length), 0, topFieldType, spec, null, null, parentRefModel);
+                    buildNestedFields(topLevelAttr, Arrays.copyOfRange(segments, 1, segments.length), 0, topFieldType, spec, normalizedValidations, null, null, topLevelReferenceModel);
                 } else {
-                    if (hasValidations(spec.getValidations())) {
-                        List<Map<String, Object>> rawValidations = convertValidations(spec.getValidations());
-                        topLevelAttr.setValidations(rawValidations);
+                    if (!normalizedValidations.isEmpty()) {
+                        topLevelAttr.setValidations(normalizedValidations);
                     }
                 }
             } catch (NoSuchFieldException e) {
@@ -98,7 +104,15 @@ public class DtoIntrospector {
                 .build();
     }
 
-    private void buildNestedFields(RawDomainAttribute parent, String[] segments, int index, Class<?> currentClass, FieldSpecRequest.FieldSpec leafSpec, Set<String> enabledReferenceModels, Map<String, Object> requestAttributes, String parentReferenceModel) {
+    private void buildNestedFields(RawDomainAttribute parent,
+                                   String[] segments,
+                                   int index,
+                                   Class<?> currentClass,
+                                   FieldSpecRequest.FieldSpec leafSpec,
+                                   List<Map<String, Object>> normalizedValidations,
+                                   Set<String> enabledReferenceModels,
+                                   Map<String, Object> requestAttributes,
+                                   String parentReferenceModel) {
         if (index >= segments.length) {
             return;
         }
@@ -123,6 +137,7 @@ public class DtoIntrospector {
                 RawDomainAttribute.RawDomainAttributeBuilder builder = RawDomainAttribute.builder()
                         .attributeType(elementClass != null ? elementClass.getSimpleName() : fieldType.getSimpleName())
                         .attributeName(field.getName())
+                        .referenceModel(parentReferenceModel + "/" + field.getName())
                         .reference(isReference)
                         .collection(isCollection)
                         .visible(visible);
@@ -131,17 +146,19 @@ public class DtoIntrospector {
                     if (leafSpec.getShortLabel() != null) {
                         builder.shortLabel(leafSpec.getShortLabel());
                     } else {
-                        builder.shortLabel(capitalize(field.getName()));
+                        builder.shortLabel("");
                     }
+                    builder.shortLabelI18n(leafSpec.getShortLabelI18n());
                     if (leafSpec.getLongLabel() != null) {
                         builder.longLabel(leafSpec.getLongLabel());
                     } else {
-                        builder.longLabel("Enter " + field.getName());
+                        builder.longLabel("");
                     }
+                    builder.longLabelI18n(leafSpec.getLongLabelI18n());
                 } else {
                     builder.modelName(elementClass != null ? elementClass.getSimpleName() : fieldType.getSimpleName())
                             .association(true)
-                            .referenceModel(parentReferenceModel + "/" + (elementClass != null ? elementClass.getSimpleName() : fieldType.getSimpleName()));
+                            .referenceModel(parentReferenceModel + "/" + field.getName());
                 }
 
                 child = builder.build();
@@ -151,16 +168,14 @@ public class DtoIntrospector {
             }
         }
 
-        if (isLast && child != null && hasValidations(leafSpec.getValidations())) {
-            List<Map<String, Object>> rawValidations = convertValidations(leafSpec.getValidations());
-            child.setValidations(rawValidations);
+        if (isLast && child != null && !normalizedValidations.isEmpty()) {
+            child.setValidations(normalizedValidations);
         }
 
         if (!isLast && child != null) {
             Class<?> childClass = getFieldClass(currentClass, child.getAttributeName());
             if (childClass != null) {
-                String childReferenceModel = child.getReference() ? child.getReferenceModel() : parentReferenceModel;
-                buildNestedFields(child, segments, index + 1, childClass, leafSpec, enabledReferenceModels, requestAttributes, childReferenceModel);
+                buildNestedFields(child, segments, index + 1, childClass, leafSpec, normalizedValidations, enabledReferenceModels, requestAttributes, child.getReferenceModel());
             }
         }
     }
@@ -201,6 +216,10 @@ public class DtoIntrospector {
         return false;
     }
 
+    private List<Map<String, Object>> normalizeValidations(Object validations) {
+        return hasValidations(validations) ? convertValidations(validations) : Collections.emptyList();
+    }
+
     private List<Map<String, Object>> convertValidations(Object validations) {
         if (validations == null) return Collections.emptyList();
 
@@ -228,9 +247,11 @@ public class DtoIntrospector {
         if (ruleMap.containsKey("type")) {
             String type = (String) ruleMap.get("type");
             Map<String, Object> params = new HashMap<>();
-            if (ruleMap.get("value") != null) params.put("value", ruleMap.get("value"));
-            if (ruleMap.get("pattern") != null) params.put("pattern", ruleMap.get("pattern"));
-            if (ruleMap.get("message") != null) params.put("message", ruleMap.get("message"));
+            for (Map.Entry<String, Object> entry : ruleMap.entrySet()) {
+                if (!"type".equals(entry.getKey()) && entry.getValue() != null) {
+                    params.put(entry.getKey(), entry.getValue());
+                }
+            }
             target.put(type, params);
         } else {
             for (Map.Entry<String, Object> entry : ruleMap.entrySet()) {
@@ -291,7 +312,7 @@ public class DtoIntrospector {
         String topLevelName = segments[0];
         RawDomainAttribute topAttr = topLevelFields.get(topLevelName);
         if (topAttr == null) {
-            topAttr = buildDefaultAttributeTree(segments, 0, rootClass, rootModelName);
+            topAttr = buildDefaultAttributeTree(segments, 0, rootClass, "");
             if (topAttr != null) {
                 topLevelFields.put(topLevelName, topAttr);
             }
@@ -313,13 +334,14 @@ public class DtoIntrospector {
             RawDomainAttribute.RawDomainAttributeBuilder builder = RawDomainAttribute.builder()
                     .attributeName(field.getName())
                     .attributeType(elementClass != null ? elementClass.getSimpleName() : fieldType.getSimpleName())
+                    .referenceModel(currentRefModel.isBlank() ? field.getName() : currentRefModel + "/" + field.getName())
                     .reference(isReference)
                     .collection(isCollection);
 
             if (!isReference) {
                 builder.visible(false);
             } else {
-                String refModel = currentRefModel + "/" + (elementClass != null ? elementClass.getSimpleName() : fieldType.getSimpleName());
+                String refModel = currentRefModel.isBlank() ? field.getName() : currentRefModel + "/" + field.getName();
                 builder.modelName(elementClass != null ? elementClass.getSimpleName() : fieldType.getSimpleName())
                         .association(true)
                         .referenceModel(refModel)
@@ -353,15 +375,16 @@ public class DtoIntrospector {
                 RawDomainAttribute.RawDomainAttributeBuilder builder = RawDomainAttribute.builder()
                         .attributeName(field.getName())
                         .attributeType(elementClass != null ? elementClass.getSimpleName() : fieldType.getSimpleName())
+                        .referenceModel(parent.getReferenceModel() + "/" + field.getName())
                         .reference(isReference)
                         .collection(isCollection);
 
                 if (!isReference) {
                     builder.visible(false)
-                            .shortLabel(capitalize(field.getName()))
-                            .longLabel("Enter " + field.getName());
+                            .shortLabel("")
+                            .longLabel("");
                 } else {
-                    String refModel = parent.getReferenceModel() + "/" + (elementClass != null ? elementClass.getSimpleName() : fieldType.getSimpleName());
+                    String refModel = parent.getReferenceModel() + "/" + field.getName();
                     builder.modelName(elementClass != null ? elementClass.getSimpleName() : fieldType.getSimpleName())
                             .association(true)
                             .referenceModel(refModel)
@@ -378,13 +401,6 @@ public class DtoIntrospector {
         } else if (child.getReference()) {
             addDefaultNestedAttribute(child, segments, index + 1, getFieldClass(currentClass, child.getAttributeName()));
         }
-    }
-
-    private String buildReferenceModel(String rootModelName, String attributeName, boolean isReference, Class<?> clazz) {
-        if (isReference) {
-            return clazz.getSimpleName();
-        }
-        return null; // primitives don't have referenceModel
     }
 
     private String capitalize(String str) {

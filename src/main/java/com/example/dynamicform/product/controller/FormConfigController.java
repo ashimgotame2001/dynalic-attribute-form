@@ -4,6 +4,9 @@ import com.example.dynamicform.platform.dto.FieldSpecRequest;
 import com.example.dynamicform.platform.dto.FormConfigResponse;
 import com.example.dynamicform.product.entity.CustomerFormConfigurationEntity;
 import com.example.dynamicform.platform.exception.FormNotFoundException;
+import com.example.dynamicform.platform.service.ResponseLocalizationService;
+import com.example.dynamicform.product.dto.FormConfigTranslationRequest;
+import com.example.dynamicform.product.dto.GenericFormConfigRequest;
 import com.example.dynamicform.product.model.BeneficiaryRequest;
 import com.example.dynamicform.product.model.RegisterCustomerRequest;
 import com.example.dynamicform.product.model.TransactionRequest;
@@ -25,34 +28,64 @@ import java.util.stream.Collectors;
 public class FormConfigController {
 
     private final FormConfigService formConfigService;
-    private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
+    private final ResponseLocalizationService responseLocalizationService;
 
     @PostMapping("/customer")
-    public ResponseEntity<FormConfigResponse> saveCustomerConfiguration(@Valid @RequestBody FieldSpecRequest request) {
+    public ResponseEntity<FormConfigResponse> saveCustomerConfiguration(@Valid @RequestBody FieldSpecRequest request,
+                                                                        @RequestHeader(value = "Language", required = false) String languageHeader,
+                                                                        @RequestHeader(value = "Accept-Language", required = false) String acceptLanguageHeader) {
         var entity = formConfigService.generateMetaDataForCustomer(request, RegisterCustomerRequest.class);
-        FormConfigResponse response = FormConfigResponse.fromEntity(entity, objectMapper);
+        FormConfigResponse response = formConfigService.buildResponse(entity, resolveLanguage(languageHeader, acceptLanguageHeader));
         return ResponseEntity.ok(response);
     }
 
     @PostMapping("/beneficiary")
-    public ResponseEntity<FormConfigResponse> saveBeneficiaryConfiguration(@Valid @RequestBody FieldSpecRequest request) {
+    public ResponseEntity<FormConfigResponse> saveBeneficiaryConfiguration(@Valid @RequestBody FieldSpecRequest request,
+                                                                           @RequestHeader(value = "Language", required = false) String languageHeader,
+                                                                           @RequestHeader(value = "Accept-Language", required = false) String acceptLanguageHeader) {
         var entity = formConfigService.generateMetaDataForBeneficiary(request, BeneficiaryRequest.class);
-        FormConfigResponse response = FormConfigResponse.fromEntity(entity, objectMapper);
+        FormConfigResponse response = formConfigService.buildResponse(entity, resolveLanguage(languageHeader, acceptLanguageHeader));
         return ResponseEntity.ok(response);
     }
 
     @PostMapping("/transaction")
-    public ResponseEntity<FormConfigResponse> saveTransactionConfiguration(@Valid @RequestBody FieldSpecRequest request) {
+    public ResponseEntity<FormConfigResponse> saveTransactionConfiguration(@Valid @RequestBody FieldSpecRequest request,
+                                                                          @RequestHeader(value = "Language", required = false) String languageHeader,
+                                                                          @RequestHeader(value = "Accept-Language", required = false) String acceptLanguageHeader) {
         var entity = formConfigService.generateMetaDataForTransaction(request, TransactionRequest.class);
-        FormConfigResponse response = FormConfigResponse.fromEntity(entity, objectMapper);
+        FormConfigResponse response = formConfigService.buildResponse(entity, resolveLanguage(languageHeader, acceptLanguageHeader));
         return ResponseEntity.ok(response);
     }
 
     @PostMapping
-    public ResponseEntity<FormConfigResponse> saveConfiguration(@Valid @RequestBody FieldSpecRequest request) {
+    public ResponseEntity<FormConfigResponse> saveConfiguration(@Valid @RequestBody FieldSpecRequest request,
+                                                                @RequestHeader(value = "Language", required = false) String languageHeader,
+                                                                @RequestHeader(value = "Accept-Language", required = false) String acceptLanguageHeader) {
         var entity = formConfigService.createOrUpdateConfiguration(request, RegisterCustomerRequest.class);
-        FormConfigResponse response = FormConfigResponse.fromEntity(entity, objectMapper);
+        FormConfigResponse response = formConfigService.buildResponse(entity, resolveLanguage(languageHeader, acceptLanguageHeader));
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/generic")
+    public ResponseEntity<FormConfigResponse> saveGenericConfiguration(@Valid @RequestBody GenericFormConfigRequest request,
+                                                                       @RequestHeader(value = "Language", required = false) String languageHeader,
+                                                                       @RequestHeader(value = "Accept-Language", required = false) String acceptLanguageHeader) {
+        var entity = formConfigService.generateGenericMetaData(
+                request,
+                request.getTargetClassName(),
+                request.getStaticMetadataPath(),
+                request.getModuleName(),
+                request.getArtifactName() != null ? request.getArtifactName() : request.getFormName());
+        FormConfigResponse response = formConfigService.buildResponse(entity, resolveLanguage(languageHeader, acceptLanguageHeader));
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/translations")
+    public ResponseEntity<FormConfigResponse> saveTranslations(@Valid @RequestBody FormConfigTranslationRequest request,
+                                                               @RequestHeader(value = "Language", required = false) String languageHeader,
+                                                               @RequestHeader(value = "Accept-Language", required = false) String acceptLanguageHeader) {
+        var entity = formConfigService.updateTranslations(request);
+        return ResponseEntity.ok(formConfigService.buildResponse(entity, resolveLanguage(languageHeader, acceptLanguageHeader)));
     }
 
     /**
@@ -61,21 +94,25 @@ public class FormConfigController {
     @GetMapping("/{formName}")
     public ResponseEntity<FormConfigResponse> getConfiguration(
             @PathVariable String formName,
-            @RequestParam(required = false) Integer version) {
+            @RequestParam(required = false) Integer version,
+            @RequestHeader(value = "Language", required = false) String languageHeader,
+            @RequestHeader(value = "Accept-Language", required = false) String acceptLanguageHeader) {
         var entity = version != null 
                 ? formConfigService.getConfiguration(formName, version).orElse(null)
                 : formConfigService.getActiveConfiguration(formName);
         if (entity == null) {
             throw new FormNotFoundException(formName);
         }
-        return ResponseEntity.ok(FormConfigResponse.fromEntity(entity, objectMapper));
+        return ResponseEntity.ok(formConfigService.buildResponse(entity, resolveLanguage(languageHeader, acceptLanguageHeader)));
     }
 
     /**
      * List all form configurations (latest versions).
      */
     @GetMapping
-    public ResponseEntity<List<FormConfigResponse>> listConfigurations() {
+    public ResponseEntity<List<FormConfigResponse>> listConfigurations(
+            @RequestHeader(value = "Language", required = false) String languageHeader,
+            @RequestHeader(value = "Accept-Language", required = false) String acceptLanguageHeader) {
         var all = formConfigService.getAllConfigurations();
         // Group by formName and get latest version for each (since repository returns all)
         var latestByForm = all.stream()
@@ -88,8 +125,9 @@ public class FormConfigController {
                 .map(java.util.Optional::get)
                 .toList();
 
+        String language = resolveLanguage(languageHeader, acceptLanguageHeader);
         var response = latestByForm.stream()
-                .map(e -> FormConfigResponse.fromEntity(e, objectMapper))
+                .map(e -> formConfigService.buildResponse(e, language))
                 .collect(Collectors.toList());
         return ResponseEntity.ok(response);
     }
@@ -103,6 +141,10 @@ public class FormConfigController {
             @RequestParam Integer version) {
         formConfigService.deleteConfiguration(formName, version);
         return ResponseEntity.noContent().build();
+    }
+
+    private String resolveLanguage(String languageHeader, String acceptLanguageHeader) {
+        return responseLocalizationService.resolveLanguage(languageHeader, acceptLanguageHeader);
     }
 
 }

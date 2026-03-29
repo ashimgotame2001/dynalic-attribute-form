@@ -17,6 +17,10 @@ public class RSPWiseDocumentSetupResponse {
     private String documentName;
     private Boolean isPrimary;
     private Long rspId;
+    private boolean isDocumentNumberRequired;
     private boolean isBackRequired;
+    private boolean isIssuedCountryRequired;
     private boolean isExpiryDateRequired;
+    private boolean isPrimaryContentRequired;
+    private boolean isSecondaryContentRequired;
 }

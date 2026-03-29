@@ -38,16 +38,7 @@ public class CustomerRSPAttributeContractEntity {
     private boolean email;
     private boolean secret;
     private boolean referralCode;
-
-    // Document attributes
     private boolean document;
-    private boolean documentType;
-    private boolean issueCountry;
-    private boolean documentNumber;
-    private boolean issueDate;
-    private boolean expiryDate;
 
-    private Integer minPrimaryDocuments;
-    private Integer minSecondaryDocuments;
 }
 

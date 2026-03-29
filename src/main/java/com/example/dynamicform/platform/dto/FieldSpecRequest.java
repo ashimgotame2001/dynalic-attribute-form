@@ -8,6 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
+import java.util.Map;
 
 
 @Data
@@ -44,8 +45,12 @@ public class FieldSpecRequest {
 
         private String shortLabel;
 
+        private Map<String, String> shortLabelI18n;
+
 
         private String longLabel;
+
+        private Map<String, String> longLabelI18n;
 
 
         private Object validations;
@@ -67,8 +72,11 @@ public class FieldSpecRequest {
 
         private String shortLabel;
 
+        private Map<String, String> shortLabelI18n;
+
 
         private String longLabel;
+        private Map<String, String> longLabelI18n;
         private String expression;
         private Object validations;
     }
@@ -84,5 +92,6 @@ public class FieldSpecRequest {
         private Object value;
         private String pattern;
         private String message;
+        private Map<String, String> messageI18n;
     }
 }

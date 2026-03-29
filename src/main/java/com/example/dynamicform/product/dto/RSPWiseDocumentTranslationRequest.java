@@ -1,5 +1,6 @@
 package com.example.dynamicform.product.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,45 +14,39 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class RSPWiseDocumentSetupRequest {
+public class RSPWiseDocumentTranslationRequest {
+    private UUID setupId;
     private UUID documentId;
-    private Boolean isPrimary;
     private Long rspId;
-
-    private List<FieldSpec> fields;
+    private List<FieldTranslation> fields;
 
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    @com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
-    public static class FieldSpec {
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class FieldTranslation {
         private String referenceModel;
-        private Boolean visible;
-        private String shortLabel;
         private Map<String, String> shortLabelI18n;
-        private String longLabel;
         private Map<String, String> longLabelI18n;
-        private ValidationDefinition validations;
+        private ValidationTranslation validations;
     }
 
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    @com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
-    public static class ValidationDefinition {
-        private RequiredValidation required;
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class ValidationTranslation {
+        private RequiredValidationTranslation required;
     }
 
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    @com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
-    public static class RequiredValidation {
-        private Boolean value;
-        private String message;
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class RequiredValidationTranslation {
         private Map<String, String> messageI18n;
     }
 }

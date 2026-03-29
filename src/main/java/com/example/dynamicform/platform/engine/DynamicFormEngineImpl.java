@@ -5,7 +5,6 @@ import com.example.dynamicform.platform.dto.ValidationError;
 import com.example.dynamicform.platform.exception.DynamicValidationException;
 import com.example.dynamicform.platform.exception.FormNotFoundException;
 import com.example.dynamicform.platform.interpreter.MetadataInterpreter;
-import com.example.dynamicform.product.repository.FormConfigurationRepository;
 import com.example.dynamicform.product.service.FormConfigService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
@@ -13,7 +12,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
-import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
 
@@ -58,10 +56,13 @@ public class DynamicFormEngineImpl implements DynamicFormEngine {
         }
 
         try {
-            // Interpret the metadata JSON into FormDefinition
-            var rawMetadata = objectMapper.readValue(config.getMetadataJson(), com.example.dynamicform.platform.dto.metadata.RawFormMetadata.class);
-            rawMetadata.setModuleName("Customer Management");
-            rawMetadata.setArtifactName(config.getFormName());
+            var rawMetadata = formConfigService.resolveMetadata(config);
+            if (rawMetadata.getModuleName() == null || rawMetadata.getModuleName().isBlank()) {
+                rawMetadata.setModuleName("Dynamic Form");
+            }
+            if (rawMetadata.getArtifactName() == null || rawMetadata.getArtifactName().isBlank()) {
+                rawMetadata.setArtifactName(config.getFormName());
+            }
             rawMetadata.setVersion(String.valueOf(config.getVersion()));
             FormDefinition formDefinition = metadataInterpreter.interpret(rawMetadata, config.getFormName(), config.getVersion());
 
@@ -73,13 +74,13 @@ public class DynamicFormEngineImpl implements DynamicFormEngine {
                     .rawMetadata(rawMetadata)
                     .description(config.getDescription())
                     .targetClassName(rawMetadata.getTargetClassName())
-                    .moduleName("Customer Management")
-                    .artifactName(config.getFormName())
+                    .moduleName(rawMetadata.getModuleName())
+                    .artifactName(rawMetadata.getArtifactName())
                     .build();
     
             return updated;
-        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
-            throw new IllegalArgumentException("Failed to parse metadata JSON for form: " + formName, e);
+        } catch (IllegalArgumentException e) {
+            throw e;
         }
     }
 
@@ -107,7 +108,6 @@ public class DynamicFormEngineImpl implements DynamicFormEngine {
         }
 
         try {
-            // Convert map to target DTO
             return objectMapper.convertValue(data, targetClass);
         } catch (Exception e) {
             logger.error("Failed to map data to DTO class {}: {}", targetClass.getName(), e.getMessage(), e);

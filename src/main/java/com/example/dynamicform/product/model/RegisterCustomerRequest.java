@@ -13,6 +13,5 @@ public class RegisterCustomerRequest {
     @Valid
     private Individual individual;
     private Referral referral;
-    private List<SupportingDocument> document;
 
 }

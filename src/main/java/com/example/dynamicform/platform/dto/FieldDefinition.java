@@ -8,6 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Definition of a field in the form.
@@ -31,11 +32,13 @@ public class FieldDefinition {
      * Short label for UI.
      */
     private String shortLabel;
+    private Map<String, String> shortLabelI18n;
 
     /**
      * Long label for UI.
      */
     private String longLabel;
+    private Map<String, String> longLabelI18n;
 
     /**
      * Data type of the field (inferred from modelName).

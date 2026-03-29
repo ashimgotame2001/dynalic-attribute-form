@@ -10,14 +10,10 @@ import com.example.dynamicform.product.enums.DynamicFieldFor;
 import com.example.dynamicform.product.repository.BeneficiaryRSPAttributeContractRepository;
 import com.example.dynamicform.product.repository.RSPAttributeContractRepository;
 import com.example.dynamicform.product.repository.TransactionRSPAttributeContractRepository;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.core.io.ClassPathResource;
+import com.example.dynamicform.platform.metadata.StaticMetadataResolver;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.*;
 
 @Service
@@ -31,27 +27,16 @@ public class RSPAttributeContractService {
     private final RSPAttributeContractRepository repository;
     private final BeneficiaryRSPAttributeContractRepository beneficiaryRepository;
     private final TransactionRSPAttributeContractRepository transactionRepository;
-    private final ObjectMapper objectMapper;
-    private final Map<String, List<Map<String, Object>>> metadataCache = new java.util.concurrent.ConcurrentHashMap<>();
-
-    private List<Map<String, Object>> getMetadata(String filePath) {
-        return metadataCache.computeIfAbsent(filePath, path -> {
-            try (InputStream is = new ClassPathResource(path).getInputStream()) {
-                return objectMapper.readValue(is, new TypeReference<List<Map<String, Object>>>() {});
-            } catch (IOException e) {
-                return Collections.emptyList();
-            }
-        });
-    }
+    private final StaticMetadataResolver staticMetadataResolver;
 
     public RSPAttributeContractService(RSPAttributeContractRepository repository,
                                       BeneficiaryRSPAttributeContractRepository beneficiaryRepository,
                                       TransactionRSPAttributeContractRepository transactionRepository,
-                                      ObjectMapper objectMapper) {
+                                      StaticMetadataResolver staticMetadataResolver) {
         this.repository = repository;
         this.beneficiaryRepository = beneficiaryRepository;
         this.transactionRepository = transactionRepository;
-        this.objectMapper = objectMapper;
+        this.staticMetadataResolver = staticMetadataResolver;
     }
 
     public List<RSPAttributeContractResponse> findAll() {
@@ -154,15 +139,6 @@ public class RSPAttributeContractService {
         entity.setSecret(false);
         entity.setReferralCode(false);
         entity.setDocument(false);
-        entity.setDocumentType(false);
-        entity.setIssueCountry(false);
-        entity.setDocumentNumber(false);
-        entity.setIssueDate(false);
-        entity.setExpiryDate(false);
-
-        entity.setMinPrimaryDocuments(request.getMinPrimaryDocuments());
-        entity.setMinSecondaryDocuments(request.getMinSecondaryDocuments());
-
         if (refs != null) {
             for (String ref : refs) {
                 switch (ref) {
@@ -181,11 +157,6 @@ public class RSPAttributeContractService {
                     case "user/secret" -> entity.setSecret(true);
                     case "referral/referralCode" -> entity.setReferralCode(true);
                     case "document" -> entity.setDocument(true);
-                    case "document/documentType/id" -> entity.setDocumentType(true);
-                    case "document/issueCountry/alphaTwoCode" -> entity.setIssueCountry(true);
-                    case "document/documentNumber" -> entity.setDocumentNumber(true);
-                    case "document/issueDate" -> entity.setIssueDate(true);
-                    case "document/expiryDate" -> entity.setExpiryDate(true);
                     default -> {
                     }
                 }
@@ -226,27 +197,21 @@ public class RSPAttributeContractService {
     private List<RSPAttributeContractResponse> toResponses(CustomerRSPAttributeContractEntity entity, String module) {
         List<RSPAttributeContractResponse> result = new ArrayList<>();
 
-        addIfTrue(result, entity.isGender(), entity.getId(), entity.getRspId(), "individual/gender/id", module, DynamicFieldFor.CUSTOMER, entity.getMinPrimaryDocuments(), entity.getMinSecondaryDocuments());
-        addIfTrue(result, entity.isNationality(), entity.getId(), entity.getRspId(), "individual/origin/alphaTwoCode", module, DynamicFieldFor.CUSTOMER, entity.getMinPrimaryDocuments(), entity.getMinSecondaryDocuments());
-        addIfTrue(result, entity.isResidingAlphaTwoCode(), entity.getId(), entity.getRspId(), "individual/residingCountry/alphaTwoCode", module, DynamicFieldFor.CUSTOMER, entity.getMinPrimaryDocuments(), entity.getMinSecondaryDocuments());
-        addIfTrue(result, entity.isPostalCode(), entity.getId(), entity.getRspId(), "individual/address/postalCodeInfo/postalCode", module, DynamicFieldFor.CUSTOMER, entity.getMinPrimaryDocuments(), entity.getMinSecondaryDocuments());
-        addIfTrue(result, entity.isCity(), entity.getId(), entity.getRspId(), "individual/address/city", module, DynamicFieldFor.CUSTOMER, entity.getMinPrimaryDocuments(), entity.getMinSecondaryDocuments());
-        addIfTrue(result, entity.isAddressLine1(), entity.getId(), entity.getRspId(), "individual/address/addressLine1", module, DynamicFieldFor.CUSTOMER, entity.getMinPrimaryDocuments(), entity.getMinSecondaryDocuments());
-        addIfTrue(result, entity.isFirstName(), entity.getId(), entity.getRspId(), "individual/firstName", module, DynamicFieldFor.CUSTOMER, entity.getMinPrimaryDocuments(), entity.getMinSecondaryDocuments());
-        addIfTrue(result, entity.isMiddleName(), entity.getId(), entity.getRspId(), "individual/middleName", module, DynamicFieldFor.CUSTOMER, entity.getMinPrimaryDocuments(), entity.getMinSecondaryDocuments());
-        addIfTrue(result, entity.isLastName(), entity.getId(), entity.getRspId(), "individual/lastName", module, DynamicFieldFor.CUSTOMER, entity.getMinPrimaryDocuments(), entity.getMinSecondaryDocuments());
-        addIfTrue(result, entity.isDateOfBirth(), entity.getId(), entity.getRspId(), "individual/dateOfBirth", module, DynamicFieldFor.CUSTOMER, entity.getMinPrimaryDocuments(), entity.getMinSecondaryDocuments());
-        addIfTrue(result, entity.isContactNumber(), entity.getId(), entity.getRspId(), "individual/contactNumber", module, DynamicFieldFor.CUSTOMER, entity.getMinPrimaryDocuments(), entity.getMinSecondaryDocuments());
-        addIfTrue(result, entity.isEmail(), entity.getId(), entity.getRspId(), "individual/email", module, DynamicFieldFor.CUSTOMER, entity.getMinPrimaryDocuments(), entity.getMinSecondaryDocuments());
-        addIfTrue(result, entity.isSecret(), entity.getId(), entity.getRspId(), "user/secret", module, DynamicFieldFor.CUSTOMER, entity.getMinPrimaryDocuments(), entity.getMinSecondaryDocuments());
-        addIfTrue(result, entity.isReferralCode(), entity.getId(), entity.getRspId(), "referral/referralCode", module, DynamicFieldFor.CUSTOMER, entity.getMinPrimaryDocuments(), entity.getMinSecondaryDocuments());
-        addIfTrue(result, entity.isDocument(), entity.getId(), entity.getRspId(), "document", module, DynamicFieldFor.CUSTOMER, entity.getMinPrimaryDocuments(), entity.getMinSecondaryDocuments());
-        addIfTrue(result, entity.isDocumentType(), entity.getId(), entity.getRspId(), "document/documentType/id", module, DynamicFieldFor.CUSTOMER, entity.getMinPrimaryDocuments(), entity.getMinSecondaryDocuments());
-        addIfTrue(result, entity.isIssueCountry(), entity.getId(), entity.getRspId(), "document/issueCountry/alphaTwoCode", module, DynamicFieldFor.CUSTOMER, entity.getMinPrimaryDocuments(), entity.getMinSecondaryDocuments());
-        addIfTrue(result, entity.isDocumentNumber(), entity.getId(), entity.getRspId(), "document/documentNumber", module, DynamicFieldFor.CUSTOMER, entity.getMinPrimaryDocuments(), entity.getMinSecondaryDocuments());
-        addIfTrue(result, entity.isIssueDate(), entity.getId(), entity.getRspId(), "document/issueDate", module, DynamicFieldFor.CUSTOMER, entity.getMinPrimaryDocuments(), entity.getMinSecondaryDocuments());
-        addIfTrue(result, entity.isExpiryDate(), entity.getId(), entity.getRspId(), "document/expiryDate", module, DynamicFieldFor.CUSTOMER, entity.getMinPrimaryDocuments(), entity.getMinSecondaryDocuments());
-
+        addIfTrue(result, entity.isGender(), entity.getId(), entity.getRspId(), "individual/gender/id", module, DynamicFieldFor.CUSTOMER);
+        addIfTrue(result, entity.isNationality(), entity.getId(), entity.getRspId(), "individual/origin/alphaTwoCode", module, DynamicFieldFor.CUSTOMER);
+        addIfTrue(result, entity.isResidingAlphaTwoCode(), entity.getId(), entity.getRspId(), "individual/residingCountry/alphaTwoCode", module, DynamicFieldFor.CUSTOMER);
+        addIfTrue(result, entity.isPostalCode(), entity.getId(), entity.getRspId(), "individual/address/postalCodeInfo/postalCode", module, DynamicFieldFor.CUSTOMER);
+        addIfTrue(result, entity.isCity(), entity.getId(), entity.getRspId(), "individual/address/city", module, DynamicFieldFor.CUSTOMER);
+        addIfTrue(result, entity.isAddressLine1(), entity.getId(), entity.getRspId(), "individual/address/addressLine1", module, DynamicFieldFor.CUSTOMER);
+        addIfTrue(result, entity.isFirstName(), entity.getId(), entity.getRspId(), "individual/firstName", module, DynamicFieldFor.CUSTOMER);
+        addIfTrue(result, entity.isMiddleName(), entity.getId(), entity.getRspId(), "individual/middleName", module, DynamicFieldFor.CUSTOMER);
+        addIfTrue(result, entity.isLastName(), entity.getId(), entity.getRspId(), "individual/lastName", module, DynamicFieldFor.CUSTOMER);
+        addIfTrue(result, entity.isDateOfBirth(), entity.getId(), entity.getRspId(), "individual/dateOfBirth", module, DynamicFieldFor.CUSTOMER);
+        addIfTrue(result, entity.isContactNumber(), entity.getId(), entity.getRspId(), "individual/contactNumber", module, DynamicFieldFor.CUSTOMER);
+        addIfTrue(result, entity.isEmail(), entity.getId(), entity.getRspId(), "individual/email", module, DynamicFieldFor.CUSTOMER);
+        addIfTrue(result, entity.isSecret(), entity.getId(), entity.getRspId(), "user/secret", module, DynamicFieldFor.CUSTOMER);
+        addIfTrue(result, entity.isReferralCode(), entity.getId(), entity.getRspId(), "referral/referralCode", module, DynamicFieldFor.CUSTOMER);
+        addIfTrue(result, entity.isDocument(), entity.getId(), entity.getRspId(), "document", module, DynamicFieldFor.CUSTOMER);
         return result;
     }
 
@@ -255,12 +220,12 @@ public class RSPAttributeContractService {
         String module = "beneficiary";
         DynamicFieldFor type = DynamicFieldFor.BENEFICIARY;
 
-        addIfTrue(result, entity.isFirstName(), entity.getId(), entity.getRspId(), "beneficiary/firstName", module, type, null, null);
-        addIfTrue(result, entity.isLastName(), entity.getId(), entity.getRspId(), "beneficiary/lastName", module, type, null, null);
-        addIfTrue(result, entity.isAccountNumber(), entity.getId(), entity.getRspId(), "beneficiary/accountNumber", module, type, null, null);
-        addIfTrue(result, entity.isBankName(), entity.getId(), entity.getRspId(), "beneficiary/bankName", module, type, null, null);
-        addIfTrue(result, entity.isIfscCode(), entity.getId(), entity.getRspId(), "beneficiary/ifscCode", module, type, null, null);
-        addIfTrue(result, entity.isRelationship(), entity.getId(), entity.getRspId(), "beneficiary/relationship", module, type, null, null);
+        addIfTrue(result, entity.isFirstName(), entity.getId(), entity.getRspId(), "beneficiary/firstName", module, type);
+        addIfTrue(result, entity.isLastName(), entity.getId(), entity.getRspId(), "beneficiary/lastName", module, type);
+        addIfTrue(result, entity.isAccountNumber(), entity.getId(), entity.getRspId(), "beneficiary/accountNumber", module, type);
+        addIfTrue(result, entity.isBankName(), entity.getId(), entity.getRspId(), "beneficiary/bankName", module, type);
+        addIfTrue(result, entity.isIfscCode(), entity.getId(), entity.getRspId(), "beneficiary/ifscCode", module, type);
+        addIfTrue(result, entity.isRelationship(), entity.getId(), entity.getRspId(), "beneficiary/relationship", module, type);
 
         return result;
     }
@@ -270,11 +235,11 @@ public class RSPAttributeContractService {
         String module = "transaction";
         DynamicFieldFor type = DynamicFieldFor.TRANSACTION;
 
-        addIfTrue(result, entity.isAmount(), entity.getId(), entity.getRspId(), "transaction/amount", module, type, null, null);
-        addIfTrue(result, entity.isCurrency(), entity.getId(), entity.getRspId(), "transaction/currency", module, type, null, null);
-        addIfTrue(result, entity.isPurpose(), entity.getId(), entity.getRspId(), "transaction/purpose", module, type, null, null);
-        addIfTrue(result, entity.isSourceOfFunds(), entity.getId(), entity.getRspId(), "transaction/sourceOfFunds", module, type, null, null);
-        addIfTrue(result, entity.isPaymentMethod(), entity.getId(), entity.getRspId(), "transaction/paymentMethod", module, type, null, null);
+        addIfTrue(result, entity.isAmount(), entity.getId(), entity.getRspId(), "transaction/amount", module, type);
+        addIfTrue(result, entity.isCurrency(), entity.getId(), entity.getRspId(), "transaction/currency", module, type);
+        addIfTrue(result, entity.isPurpose(), entity.getId(), entity.getRspId(), "transaction/purpose", module, type);
+        addIfTrue(result, entity.isSourceOfFunds(), entity.getId(), entity.getRspId(), "transaction/sourceOfFunds", module, type);
+        addIfTrue(result, entity.isPaymentMethod(), entity.getId(), entity.getRspId(), "transaction/paymentMethod", module, type);
 
         return result;
     }
@@ -285,9 +250,8 @@ public class RSPAttributeContractService {
                            Long rspId,
                            String referenceModel,
                            String module,
-                           DynamicFieldFor fieldType,
-                           Integer minPrimary,
-                           Integer minSecondary) {
+                           DynamicFieldFor fieldType
+                       ) {
         if (!flag) {
             return;
         }
@@ -298,8 +262,6 @@ public class RSPAttributeContractService {
                         .referenceModel(referenceModel)
                         .label(resolveLabel(referenceModel, module))
                         .fieldType(fieldType)
-                        .minPrimaryDocuments(minPrimary)
-                        .minSecondaryDocuments(minSecondary)
                         .build()
         );
     }
@@ -315,15 +277,18 @@ public class RSPAttributeContractService {
 
         String label = null;
         if ("customer".equalsIgnoreCase(module)) {
-            label = findLabelInFile(referenceModel, CUSTOMER_METADATA_PATH);
+            label = staticMetadataResolver.resolveLabel(CUSTOMER_METADATA_PATH, referenceModel);
         } else if ("beneficiary".equalsIgnoreCase(module)) {
-            label = findLabelInFile(referenceModel, BENEFICIARY_METADATA_PATH);
+            label = staticMetadataResolver.resolveLabel(BENEFICIARY_METADATA_PATH, referenceModel);
         } else if ("transaction".equalsIgnoreCase(module)) {
-            label = findLabelInFile(referenceModel, TRANSACTION_METADATA_PATH);
+            label = staticMetadataResolver.resolveLabel(TRANSACTION_METADATA_PATH, referenceModel);
         }
 
-        if (label == null) {
-            label = findLabelInFile(referenceModel, DOCUMENT_METADATA_PATH);
+        if (label == null || label.equals(referenceModel)) {
+            String documentLabel = staticMetadataResolver.resolveLabel(DOCUMENT_METADATA_PATH, referenceModel);
+            if (!documentLabel.equals(referenceModel)) {
+                label = documentLabel;
+            }
         }
 
         if (label != null) {
@@ -337,16 +302,4 @@ public class RSPAttributeContractService {
                 .replaceFirst("^[a-z]", last.substring(0, 1).toUpperCase());
     }
 
-    private String findLabelInFile(String referenceModel, String filePath) {
-        for (Map<String, Object> item : getMetadata(filePath)) {
-            if (referenceModel.equals(item.get("referenceModel"))) {
-                Object label = item.get("label");
-                if (label != null) {
-                    return label.toString();
-                }
-            }
-        }
-        return null;
-    }
 }
-

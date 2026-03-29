@@ -37,8 +37,12 @@ public class RawDomainAttribute {
     private Boolean visible;
 
     private String shortLabel;
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private Map<String, String> shortLabelI18n;
 
     private String longLabel;
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private Map<String, String> longLabelI18n;
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private List<Map<String, Object>> validations;

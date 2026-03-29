@@ -48,7 +48,6 @@ public class ValidationEngineImpl implements ValidationEngine {
 
         Object value = data != null ? data.get(fieldName) : null;
 
-        // Validate the field's own validations (including required, min, max, etc.)
         if (field.getValidations() != null && !field.getValidations().isEmpty()) {
             List<ValidationError> fieldErrors = validateField(fieldName, value, field.getValidations());
             // Prepend path to errors
@@ -58,8 +57,6 @@ public class ValidationEngineImpl implements ValidationEngine {
             }
         }
 
-        // If field is not visible and value is null, skip nested validation? Actually if the field is not visible, the frontend might not submit it; we can ignore null values for nested processing. But if a value is provided, we should still validate.
-        // For nested object handling:
         if (value != null && field.isNestedObject()) {
             if (value instanceof Map) {
                 @SuppressWarnings("unchecked")
@@ -70,7 +67,6 @@ public class ValidationEngineImpl implements ValidationEngine {
                     }
                 }
             } else {
-                // Unexpected: nested object expected to be a map but got something else.
                 errors.add(ValidationError.builder()
                         .fieldPath(currentPath)
                         .message("Expected nested object but got: " + value.getClass().getSimpleName())
@@ -79,11 +75,9 @@ public class ValidationEngineImpl implements ValidationEngine {
             }
         }
 
-        // If collection:
         if (value != null && field.isCollection()) {
             if (value instanceof List) {
                 List<?> list = (List<?>) value;
-                // For collection of nested objects, we need to validate each element's nested fields.
                 if (field.isNestedObject() && field.getNestedFields() != null) {
                     int index = 0;
                     for (Object element : list) {
@@ -104,7 +98,6 @@ public class ValidationEngineImpl implements ValidationEngine {
                         index++;
                     }
                 }
-                // For simple collections, element-level validations are not defined separately.
             } else {
                 errors.add(ValidationError.builder()
                         .fieldPath(currentPath)

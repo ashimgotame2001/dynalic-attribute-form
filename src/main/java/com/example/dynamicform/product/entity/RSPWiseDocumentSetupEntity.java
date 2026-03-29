@@ -3,11 +3,15 @@ package com.example.dynamicform.product.entity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.UUID;
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -26,7 +30,21 @@ public class RSPWiseDocumentSetupEntity {
 
     private Long rspId;
 
+    @Builder.Default
+    @OneToMany(mappedBy = "setup", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("displayOrder ASC")
+    private Set<RSPWiseDocumentFieldConfigEntity> fieldConfigs = new LinkedHashSet<>();
+
+    // Legacy columns retained temporarily for rollout fallback. New writes should use fieldConfigs.
+    private boolean isDocumentNumberRequired;
     private boolean isBackRequired;
+    private boolean isIssuedCountryRequired;
     private boolean isExpiryDateRequired;
+    private boolean isPrimaryContentRequired;
+    private boolean isSecondaryContentRequired;
+
+    // Legacy JSON retained temporarily for rollout fallback. New reads should prefer fieldConfigs.
+    @Column(columnDefinition = "TEXT")
+    private String metadataJson;
 
 }

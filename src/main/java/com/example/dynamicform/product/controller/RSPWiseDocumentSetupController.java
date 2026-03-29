@@ -2,6 +2,7 @@ package com.example.dynamicform.product.controller;
 
 import com.example.dynamicform.product.dto.RSPWiseDocumentSetupRequest;
 import com.example.dynamicform.product.dto.RSPWiseDocumentSetupResponse;
+import com.example.dynamicform.product.dto.RSPWiseDocumentTranslationRequest;
 import com.example.dynamicform.product.service.RSPWiseDocumentSetupService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -26,6 +27,11 @@ public class RSPWiseDocumentSetupController {
     @PutMapping("/{id}")
     public ResponseEntity<RSPWiseDocumentSetupResponse> update(@PathVariable UUID id, @RequestBody RSPWiseDocumentSetupRequest request) {
         return ResponseEntity.ok(service.update(id, request));
+    }
+
+    @PostMapping("/translations")
+    public ResponseEntity<RSPWiseDocumentSetupResponse> updateTranslations(@RequestBody RSPWiseDocumentTranslationRequest request) {
+        return ResponseEntity.ok(service.updateTranslations(request));
     }
 
     @GetMapping("/{id}")

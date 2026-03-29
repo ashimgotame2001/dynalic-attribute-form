@@ -1,7 +1,6 @@
 package com.example.dynamicform.product.controller;
 
 import com.example.dynamicform.product.dto.DynamicFormConfigRequest;
-import com.example.dynamicform.platform.dto.FieldDefinition;
 import com.example.dynamicform.platform.dto.FormDefinition;
 import com.example.dynamicform.product.dto.RSPAttributeContractResponse;
 import com.example.dynamicform.platform.dto.ValidationError;
@@ -9,11 +8,10 @@ import com.example.dynamicform.platform.dto.metadata.RawFormMetadata;
 import com.example.dynamicform.platform.engine.DynamicFormEngine;
 import com.example.dynamicform.platform.exception.DynamicValidationException;
 import com.example.dynamicform.platform.exception.FormNotFoundException;
+import com.example.dynamicform.platform.service.ResponseLocalizationService;
+import com.example.dynamicform.platform.service.RawMetadataCustomizationService;
 import com.example.dynamicform.product.service.RSPAttributeContractService;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -32,22 +30,30 @@ public class FormRenderController {
 
     private final DynamicFormEngine dynamicFormEngine;
     private final RSPAttributeContractService rspAttributeContractService;
-    private final ObjectMapper objectMapper;
+    private final RawMetadataCustomizationService rawMetadataCustomizationService;
+    private final ResponseLocalizationService responseLocalizationService;
 
     /**
      * Get the form definition for rendering a dynamic form.
      */
     @GetMapping("/{formName}")
-    public ResponseEntity<FormDefinition> getForm(@PathVariable String formName) {
+    public ResponseEntity<FormDefinition> getForm(@PathVariable String formName,
+                                                  @RequestHeader(value = "Language", required = false) String languageHeader,
+                                                  @RequestHeader(value = "Accept-Language", required = false) String acceptLanguageHeader) {
         FormDefinition formDefinition = dynamicFormEngine.getFormDefinition(formName);
-        return ResponseEntity.ok(formDefinition);
+        return ResponseEntity.ok(responseLocalizationService.prepareFormDefinitionResponse(
+                formDefinition,
+                responseLocalizationService.resolveLanguage(languageHeader, acceptLanguageHeader)));
     }
 
     /**
      * Get customized form definition based on RSP and request attributes.
      */
     @PostMapping("/{formName}/config")
-    public ResponseEntity<RawFormMetadata> getCustomForm(@PathVariable String formName, @RequestBody DynamicFormConfigRequest request) {
+    public ResponseEntity<RawFormMetadata> getCustomForm(@PathVariable String formName,
+                                                         @RequestBody DynamicFormConfigRequest request,
+                                                         @RequestHeader(value = "Language", required = false) String languageHeader,
+                                                         @RequestHeader(value = "Accept-Language", required = false) String acceptLanguageHeader) {
         FormDefinition baseForm = dynamicFormEngine.getFormDefinition(formName);
         RawFormMetadata baseRaw = baseForm.getRawMetadata();
         // Default to "customer" module for existing calls
@@ -55,98 +61,10 @@ public class FormRenderController {
         Set<String> enabledReferenceModels = enabledAttributes.stream()
                 .map(RSPAttributeContractResponse::getReferenceModel)
                 .collect(java.util.stream.Collectors.toSet());
-        RawFormMetadata customized = customizeRawFormMetadata(baseRaw, enabledReferenceModels, request.getAttributes());
-        return ResponseEntity.ok(customized);
-    }
-
-    private FormDefinition customizeFormDefinition(FormDefinition baseForm, Set<String> enabledReferenceModels, Map<String, Object> requestAttributes) {
-        List<FieldDefinition> customizedFields = baseForm.getFields().stream()
-                .filter(field -> isAttributeEnabled(enabledReferenceModels, field.getFieldName()))
-                .map(field -> {
-                    FieldDefinition copy = field.toBuilder().build(); // assuming builder
-                    if (requestAttributes != null && requestAttributes.containsKey(field.getFieldName())) {
-                        copy.setVisible(true);
-                    } else {
-                        copy.setVisible(false);
-                    }
-                    if (field.getNestedFields() != null) {
-                        copy.setNestedFields(customizeNestedFields(field.getNestedFields(), enabledReferenceModels, requestAttributes));
-                    }
-                    return copy;
-                })
-                .toList();
-        return baseForm.toBuilder().fields(customizedFields).build();
-    }
-
-    private List<FieldDefinition> customizeNestedFields(List<FieldDefinition> nestedFields, Set<String> enabledReferenceModels, Map<String, Object> requestAttributes) {
-        return nestedFields.stream()
-                .filter(field -> isAttributeEnabled(enabledReferenceModels, field.getFieldName()))
-                .map(field -> {
-                    FieldDefinition copy = field.toBuilder().build();
-                    // For nested, perhaps check in sub-map, but for simplicity, assume same logic
-                    copy.setVisible(requestAttributes != null && requestAttributes.containsKey(field.getFieldName()));
-                    if (field.getNestedFields() != null) {
-                        copy.setNestedFields(customizeNestedFields(field.getNestedFields(), enabledReferenceModels, requestAttributes));
-                    }
-                    return copy;
-                })
-                .toList();
-    }
-
-    private boolean isAttributeEnabled(Set<String> enabledReferenceModels, String fieldName) {
-        // Map fieldName to referenceModel
-        String refModel = mapFieldNameToReferenceModel(fieldName);
-        return refModel != null && enabledReferenceModels.contains(refModel);
-    }
-
-    private RawFormMetadata customizeRawFormMetadata(RawFormMetadata baseRaw, Set<String> enabledReferenceModels, Map<String, Object> requestAttributes) {
-        RawFormMetadata customized = baseRaw.toBuilder().build();
-        customized.setDomainModel(customizeRawDomainModel(baseRaw.getDomainModel(), enabledReferenceModels, requestAttributes));
-        return customized;
-    }
-
-    private com.example.dynamicform.platform.dto.metadata.RawDomainModel customizeRawDomainModel(com.example.dynamicform.platform.dto.metadata.RawDomainModel domainModel, Set<String> enabledReferenceModels, Map<String, Object> requestAttributes) {
-        if (domainModel == null || domainModel.getAttributes() == null) {
-            return domainModel;
-        }
-        List<com.example.dynamicform.platform.dto.metadata.RawDomainAttribute> customizedAttributes = domainModel.getAttributes().stream()
-                .filter(attr -> enabledReferenceModels.contains(attr.getReferenceModel()))
-                .map(attr -> {
-                    com.example.dynamicform.platform.dto.metadata.RawDomainAttribute copy = attr.toBuilder().build();
-                    // For simplicity, assume attributeName is the key for requestAttributes
-                    if (requestAttributes != null && requestAttributes.containsKey(attr.getAttributeName())) {
-                        copy.setVisible(true);
-                    } else {
-                        copy.setVisible(false);
-                    }
-                    // Recursively customize nested
-                    if (attr.getDomainModel() != null) {
-                        copy.setDomainModel(customizeRawDomainModel(attr.getDomainModel(), enabledReferenceModels, requestAttributes));
-                    }
-                    return copy;
-                })
-                .toList();
-        return com.example.dynamicform.platform.dto.metadata.RawDomainModel.builder().attributes(customizedAttributes).build();
-    }
-
-    private String mapFieldNameToReferenceModel(String fieldName) {
-        return switch (fieldName) {
-            case "gender" -> "individual/gender/id";
-            case "nationality" -> "individual/origin/alphaTwoCode";
-            case "residingAlphaTwoCode" -> "individual/residingCountry/alphaTwoCode";
-            case "postalCode" -> "individual/address/postalCodeInfo/postalCode";
-            case "city" -> "individual/address/city";
-            case "addressLine1" -> "individual/address/addressLine1";
-            case "firstName" -> "individual/firstName";
-            case "middleName" -> "individual/middleName";
-            case "lastName" -> "individual/lastName";
-            case "dateOfBirth" -> "individual/dateOfBirth";
-            case "contactNumber" -> "individual/contactNumber";
-            case "email" -> "individual/email";
-            case "secret" -> "user/secret";
-            case "referralCode" -> "referral/referralCode";
-            default -> null;
-        };
+        RawFormMetadata customized = rawMetadataCustomizationService.customize(baseRaw, enabledReferenceModels, request.getAttributes());
+        return ResponseEntity.ok(responseLocalizationService.prepareRawMetadataResponse(
+                customized,
+                responseLocalizationService.resolveLanguage(languageHeader, acceptLanguageHeader)));
     }
 
     /**
