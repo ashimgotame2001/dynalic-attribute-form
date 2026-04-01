@@ -33,6 +33,8 @@ public class RawDomainAttribute {
 
     private Boolean association;
 
+    private Boolean composition;
+
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private Boolean visible;
 

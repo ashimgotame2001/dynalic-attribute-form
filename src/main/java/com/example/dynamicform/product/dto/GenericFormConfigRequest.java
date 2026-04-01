@@ -16,4 +16,5 @@ public class GenericFormConfigRequest extends FieldSpecRequest {
     private String staticMetadataPath;
     private String moduleName;
     private String artifactName;
+    private Boolean includeAllFields;
 }

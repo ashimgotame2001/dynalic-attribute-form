@@ -15,8 +15,17 @@ public class CacheConfig {
 
     @Bean
     public ConcurrentMapCacheManager cacheManager() {
-        ConcurrentMapCacheManager cacheManager = new ConcurrentMapCacheManager("formDefinitions");
-        cacheManager.setStoreByValue(false); // store by reference for better performance
+        ConcurrentMapCacheManager cacheManager = new ConcurrentMapCacheManager(
+            "formDefinitions",
+            "metadataDefinitions",
+            "relationshipDefinitions",
+            "relationshipInstances",
+            "domainModelData",
+            "schemaVersions",
+            "auditTrail",
+            "validationConfigs"
+        );
+        cacheManager.setStoreByValue(false);
         return cacheManager;
     }
 

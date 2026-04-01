@@ -1,4 +1,4 @@
-package com.example.dynamicform.platform.interpreter;
+package com.example.dynamicform.platform.core;
 
 import com.example.dynamicform.platform.dto.FieldDefinition;
 import com.example.dynamicform.platform.dto.FormDefinition;
@@ -8,10 +8,13 @@ import com.example.dynamicform.platform.dto.metadata.RawDomainAttribute;
 import com.example.dynamicform.platform.dto.metadata.RawFormMetadata;
 import com.example.dynamicform.platform.exception.MetadataInterpretationException;
 import com.example.dynamicform.platform.util.MetadataUtils;
+import com.example.dynamicform.product.dto.RelationshipDefinitionDTO;
+import com.example.dynamicform.product.service.RelationshipService;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,6 +26,9 @@ import java.util.List;
 public class MetadataInterpreterImpl implements MetadataInterpreter {
 
     private static final Logger logger = LoggerFactory.getLogger(MetadataInterpreterImpl.class);
+
+    @Autowired
+    private RelationshipService relationshipService;
 
     @Override
     public FormDefinition interpret(RawFormMetadata rawMetadata, String formName) {
@@ -49,20 +55,22 @@ public class MetadataInterpreterImpl implements MetadataInterpreter {
             }
         }
 
+        // Fetch dynamic relationships for this domain model
+        List<RelationshipDefinitionDTO> relationships = relationshipService.getRelationshipDefinitionsByEntity(formName);
+
         FormDefinition formDefinition = FormDefinition.builder()
                 .formName(formName)
                 .fields(fields)
                 .version(version)
                 .rawMetadata(rawMetadata)
+                .relationships(relationships)
                 .build();
 
         logger.info("Successfully interpreted form definition for: {} with {} top-level fields", formName, fields.size());
         return formDefinition;
     }
 
-    /**
-     * Recursively interprets a RawDomainAttribute into a FieldDefinition.
-     */
+
     private FieldDefinition interpretAttribute(RawDomainAttribute raw) {
         if (raw == null) {
             return null;

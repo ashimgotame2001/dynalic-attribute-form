@@ -1,4 +1,4 @@
-package com.example.dynamicform.platform.interpreter;
+package com.example.dynamicform.platform.core;
 
 import com.example.dynamicform.platform.dto.FormDefinition;
 import com.example.dynamicform.platform.dto.metadata.RawFormMetadata;

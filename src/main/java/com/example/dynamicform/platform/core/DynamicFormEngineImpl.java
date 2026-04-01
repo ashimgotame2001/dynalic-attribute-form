@@ -1,10 +1,11 @@
-package com.example.dynamicform.platform.engine;
+package com.example.dynamicform.platform.core;
 
 import com.example.dynamicform.platform.dto.FormDefinition;
 import com.example.dynamicform.platform.dto.ValidationError;
 import com.example.dynamicform.platform.exception.DynamicValidationException;
 import com.example.dynamicform.platform.exception.FormNotFoundException;
-import com.example.dynamicform.platform.interpreter.MetadataInterpreter;
+import com.example.dynamicform.platform.core.MetadataInterpreter;
+import com.example.dynamicform.platform.service.DynamicRelationshipFormService;
 import com.example.dynamicform.product.service.FormConfigService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
@@ -25,15 +26,18 @@ public class DynamicFormEngineImpl implements DynamicFormEngine {
 
     private final FormConfigService formConfigService;
     private final MetadataInterpreter metadataInterpreter;
+    private final DynamicRelationshipFormService dynamicRelationshipFormService;
     private final ObjectMapper objectMapper;
     private final com.example.dynamicform.platform.validation.ValidationEngine validationEngine;
 
     public DynamicFormEngineImpl(FormConfigService formConfigService,
                                  MetadataInterpreter metadataInterpreter,
+                                 DynamicRelationshipFormService dynamicRelationshipFormService,
                                  ObjectMapper objectMapper,
                                  com.example.dynamicform.platform.validation.ValidationEngine validationEngine) {
         this.formConfigService = formConfigService;
         this.metadataInterpreter = metadataInterpreter;
+        this.dynamicRelationshipFormService = dynamicRelationshipFormService;
         this.objectMapper = objectMapper;
         this.validationEngine = validationEngine;
     }
@@ -57,6 +61,7 @@ public class DynamicFormEngineImpl implements DynamicFormEngine {
 
         try {
             var rawMetadata = formConfigService.resolveMetadata(config);
+            rawMetadata = dynamicRelationshipFormService.augmentWithRelationships(rawMetadata, config.getFormName());
             if (rawMetadata.getModuleName() == null || rawMetadata.getModuleName().isBlank()) {
                 rawMetadata.setModuleName("Dynamic Form");
             }
@@ -76,6 +81,7 @@ public class DynamicFormEngineImpl implements DynamicFormEngine {
                     .targetClassName(rawMetadata.getTargetClassName())
                     .moduleName(rawMetadata.getModuleName())
                     .artifactName(rawMetadata.getArtifactName())
+                    .relationships(formDefinition.getRelationships())
                     .build();
     
             return updated;

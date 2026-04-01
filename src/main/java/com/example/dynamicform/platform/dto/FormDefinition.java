@@ -1,6 +1,7 @@
 package com.example.dynamicform.platform.dto;
 
 import com.example.dynamicform.platform.dto.metadata.RawFormMetadata;
+import com.example.dynamicform.product.dto.RelationshipDefinitionDTO;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -56,4 +57,9 @@ public class FormDefinition {
      * Artifact name.
      */
     private String artifactName;
+
+    /**
+     * Dynamic relationships associated with this form's domain model.
+     */
+    private List<RelationshipDefinitionDTO> relationships;
 }

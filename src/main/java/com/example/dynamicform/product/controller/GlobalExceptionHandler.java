@@ -3,10 +3,12 @@ package com.example.dynamicform.product.controller;
 import com.example.dynamicform.platform.dto.ValidationError;
 import com.example.dynamicform.platform.exception.DynamicValidationException;
 import com.example.dynamicform.platform.exception.FormNotFoundException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -44,6 +46,29 @@ public class GlobalExceptionHandler {
                     .build();
             return ResponseEntity.badRequest().body(List.of(error));
         }
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<?> handleMethodArgumentNotValid(MethodArgumentNotValidException ex) {
+        List<ValidationError> errors = ex.getBindingResult().getFieldErrors().stream()
+                .map(error -> ValidationError.builder()
+                        .fieldPath(error.getField())
+                        .message(error.getDefaultMessage())
+                        .validationType("request")
+                        .build())
+                .toList();
+        return ResponseEntity.badRequest().body(errors);
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<?> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
+        logger.warn("Data integrity violation: {}", ex.getMessage());
+        ValidationError error = ValidationError.builder()
+                .fieldPath("request")
+                .message("Request violates a persistence constraint. Check required fields and unique values.")
+                .validationType("request")
+                .build();
+        return ResponseEntity.badRequest().body(List.of(error));
     }
 
     @ExceptionHandler(Exception.class)

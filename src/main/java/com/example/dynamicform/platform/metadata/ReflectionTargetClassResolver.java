@@ -1,4 +1,4 @@
-package com.example.dynamicform.platform.resolver;
+package com.example.dynamicform.platform.metadata;
 
 import org.springframework.stereotype.Component;
 

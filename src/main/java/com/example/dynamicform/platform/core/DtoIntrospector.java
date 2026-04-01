@@ -1,4 +1,4 @@
-package com.example.dynamicform.platform.interpreter;
+package com.example.dynamicform.platform.core;
 
 import com.example.dynamicform.platform.dto.FieldSpecRequest;
 import com.example.dynamicform.platform.dto.metadata.RawDomainAttribute;
@@ -22,7 +22,7 @@ public class DtoIntrospector {
         if (fieldSpecs == null || fieldSpecs.isEmpty()) {
             return RawFormMetadata.builder()
                     .modelName(rootModelName)
-                    .domainModel(RawDomainModel.builder().attributes(new ArrayList<>()).build())
+                    .domainModel(buildNestedForUnspecified(targetClass, ""))
                     .build();
         }
 
@@ -52,13 +52,14 @@ public class DtoIntrospector {
                 Class<?> topFieldType = topField.getType();
                 boolean isCollection = List.class.isAssignableFrom(topFieldType);
                 Class<?> elementClass = isCollection ? getCollectionElementType(topField) : topFieldType;
-
-                boolean isReference = !isCollection && isComplexType(topFieldType);
+                Class<?> effectiveClass = elementClass != null ? elementClass : topFieldType;
+                boolean isReference = isComplexType(effectiveClass);
                 boolean visible = (enabledReferenceModels == null) ? (spec.getVisible() != null ? spec.getVisible() : true) : (requestAttributes != null && requestAttributes.containsKey(topLevelName));
                 String topLevelReferenceModel = topLevelName;
 
                 RawDomainAttribute.RawDomainAttributeBuilder builder = RawDomainAttribute.builder()
                         .attributeType(elementClass != null ? elementClass.getSimpleName() : topFieldType.getSimpleName())
+                        .modelName(effectiveClass.getSimpleName())
                         .attributeName(topLevelName)
                         .referenceModel(topLevelReferenceModel)
                         .reference(isReference)
@@ -73,6 +74,9 @@ public class DtoIntrospector {
                 }
 
                 RawDomainAttribute topLevelAttr = topLevelFields.computeIfAbsent(topLevelName, k -> builder.build());
+                if (isReference && topLevelAttr.getDomainModel() == null) {
+                    topLevelAttr.setDomainModel(buildNestedForUnspecified(effectiveClass, topLevelReferenceModel));
+                }
 
                 if (segments.length > 1) {
                     buildNestedFields(topLevelAttr, Arrays.copyOfRange(segments, 1, segments.length), 0, topFieldType, spec, normalizedValidations, null, null, topLevelReferenceModel);
@@ -131,11 +135,13 @@ public class DtoIntrospector {
                 Class<?> fieldType = field.getType();
                 boolean isCollection = List.class.isAssignableFrom(fieldType);
                 Class<?> elementClass = isCollection ? getCollectionElementType(field) : fieldType;
-                boolean isReference = !isCollection && isComplexType(fieldType);
+                Class<?> effectiveClass = elementClass != null ? elementClass : fieldType;
+                boolean isReference = isComplexType(effectiveClass);
                 boolean visible = leafSpec.getVisible() != null ? leafSpec.getVisible() : ((enabledReferenceModels == null) ? true : (requestAttributes != null && requestAttributes.containsKey(parent.getAttributeName())));
 
                 RawDomainAttribute.RawDomainAttributeBuilder builder = RawDomainAttribute.builder()
                         .attributeType(elementClass != null ? elementClass.getSimpleName() : fieldType.getSimpleName())
+                        .modelName(effectiveClass.getSimpleName())
                         .attributeName(field.getName())
                         .referenceModel(parentReferenceModel + "/" + field.getName())
                         .reference(isReference)
@@ -156,9 +162,10 @@ public class DtoIntrospector {
                     }
                     builder.longLabelI18n(leafSpec.getLongLabelI18n());
                 } else {
-                    builder.modelName(elementClass != null ? elementClass.getSimpleName() : fieldType.getSimpleName())
+                    builder.modelName(effectiveClass.getSimpleName())
                             .association(true)
-                            .referenceModel(parentReferenceModel + "/" + field.getName());
+                            .referenceModel(parentReferenceModel + "/" + field.getName())
+                            .domainModel(buildNestedForUnspecified(effectiveClass, parentReferenceModel + "/" + field.getName()));
                 }
 
                 child = builder.build();
@@ -184,10 +191,12 @@ public class DtoIntrospector {
         Class<?> fieldType = field.getType();
         boolean isCollection = List.class.isAssignableFrom(fieldType);
         Class<?> elementClass = isCollection ? getCollectionElementType(field) : fieldType;
-        boolean isReference = !isCollection && isComplexType(fieldType);
+        Class<?> effectiveClass = elementClass != null ? elementClass : fieldType;
+        boolean isReference = isComplexType(effectiveClass);
 
         RawDomainAttribute.RawDomainAttributeBuilder builder = RawDomainAttribute.builder()
                 .attributeType(elementClass != null ? elementClass.getSimpleName() : fieldType.getSimpleName())
+                .modelName(effectiveClass.getSimpleName())
                 .attributeName(field.getName())
                 .reference(isReference)
                 .collection(isCollection);
@@ -201,9 +210,9 @@ public class DtoIntrospector {
                 builder.longLabel(longLabel);
             }
         } else {
-            builder.modelName(elementClass != null ? elementClass.getSimpleName() : fieldType.getSimpleName())
+            builder.modelName(effectiveClass.getSimpleName())
                     .association(true)
-                    .domainModel(RawDomainModel.builder().attributes(new ArrayList<>()).build());
+                    .domainModel(buildNestedForUnspecified(effectiveClass, field.getName()));
         }
 
         return builder.build();
@@ -329,11 +338,13 @@ public class DtoIntrospector {
             Class<?> fieldType = field.getType();
             boolean isCollection = List.class.isAssignableFrom(fieldType);
             Class<?> elementClass = isCollection ? getCollectionElementType(field) : fieldType;
-            boolean isReference = !isCollection && isComplexType(fieldType);
+            Class<?> effectiveClass = elementClass != null ? elementClass : fieldType;
+            boolean isReference = isComplexType(effectiveClass);
 
             RawDomainAttribute.RawDomainAttributeBuilder builder = RawDomainAttribute.builder()
                     .attributeName(field.getName())
                     .attributeType(elementClass != null ? elementClass.getSimpleName() : fieldType.getSimpleName())
+                    .modelName(effectiveClass.getSimpleName())
                     .referenceModel(currentRefModel.isBlank() ? field.getName() : currentRefModel + "/" + field.getName())
                     .reference(isReference)
                     .collection(isCollection);
@@ -342,10 +353,10 @@ public class DtoIntrospector {
                 builder.visible(false);
             } else {
                 String refModel = currentRefModel.isBlank() ? field.getName() : currentRefModel + "/" + field.getName();
-                builder.modelName(elementClass != null ? elementClass.getSimpleName() : fieldType.getSimpleName())
+                builder.modelName(effectiveClass.getSimpleName())
                         .association(true)
                         .referenceModel(refModel)
-                        .domainModel(RawDomainModel.builder().attributes(new ArrayList<>()).build());
+                        .domainModel(buildNestedForUnspecified(effectiveClass, refModel));
                 RawDomainAttribute child = buildDefaultAttributeTree(segments, index + 1, elementClass != null ? elementClass : fieldType, refModel);
                 if (child != null) {
                     builder.build().getDomainModel().getAttributes().add(child);
@@ -370,11 +381,13 @@ public class DtoIntrospector {
                 Class<?> fieldType = field.getType();
                 boolean isCollection = List.class.isAssignableFrom(fieldType);
                 Class<?> elementClass = isCollection ? getCollectionElementType(field) : fieldType;
-                boolean isReference = !isCollection && isComplexType(fieldType);
+                Class<?> effectiveClass = elementClass != null ? elementClass : fieldType;
+                boolean isReference = isComplexType(effectiveClass);
 
                 RawDomainAttribute.RawDomainAttributeBuilder builder = RawDomainAttribute.builder()
                         .attributeName(field.getName())
                         .attributeType(elementClass != null ? elementClass.getSimpleName() : fieldType.getSimpleName())
+                        .modelName(effectiveClass.getSimpleName())
                         .referenceModel(parent.getReferenceModel() + "/" + field.getName())
                         .reference(isReference)
                         .collection(isCollection);
@@ -385,10 +398,10 @@ public class DtoIntrospector {
                             .longLabel("");
                 } else {
                     String refModel = parent.getReferenceModel() + "/" + field.getName();
-                    builder.modelName(elementClass != null ? elementClass.getSimpleName() : fieldType.getSimpleName())
+                    builder.modelName(effectiveClass.getSimpleName())
                             .association(true)
                             .referenceModel(refModel)
-                            .domainModel(RawDomainModel.builder().attributes(new ArrayList<>()).build());
+                            .domainModel(buildNestedForUnspecified(effectiveClass, refModel));
                 }
                 child = builder.build();
                 parent.getDomainModel().getAttributes().add(child);
@@ -416,10 +429,15 @@ public class DtoIntrospector {
         return sb.toString();
     }
 
-    private RawDomainModel buildNestedForUnspecified(Class<?> clazz) {
+    private RawDomainModel buildNestedForUnspecified(Class<?> clazz, String parentReferenceModel) {
         List<RawDomainAttribute> attributes = new ArrayList<>();
         for (Field field : clazz.getDeclaredFields()) {
             RawDomainAttribute attr = buildAttributeFromField(field, false, null, null);
+            if (parentReferenceModel != null && !parentReferenceModel.isBlank()) {
+                attr.setReferenceModel(parentReferenceModel + "/" + field.getName());
+            } else {
+                attr.setReferenceModel(field.getName());
+            }
             attributes.add(attr);
         }
         return RawDomainModel.builder().attributes(attributes).build();

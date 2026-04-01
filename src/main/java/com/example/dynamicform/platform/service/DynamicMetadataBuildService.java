@@ -3,9 +3,10 @@ package com.example.dynamicform.platform.service;
 import com.example.dynamicform.platform.dto.DynamicMetadataBuildRequest;
 import com.example.dynamicform.platform.dto.metadata.RawDomainAttribute;
 import com.example.dynamicform.platform.dto.metadata.RawFormMetadata;
-import com.example.dynamicform.platform.interpreter.DtoIntrospector;
+import com.example.dynamicform.platform.core.DtoIntrospector;
 import com.example.dynamicform.platform.metadata.StaticMetadataResolver;
-import com.example.dynamicform.platform.resolver.TargetClassResolver;
+import com.example.dynamicform.platform.metadata.TargetClassResolver;
+import com.example.dynamicform.platform.util.MetadataUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -52,14 +53,14 @@ public class DynamicMetadataBuildService {
         for (RawDomainAttribute attribute : attributes) {
             if (attribute.getReferenceModel() != null && !attribute.getReferenceModel().isBlank()) {
                 if (Boolean.TRUE.equals(attribute.getReference()) || Boolean.TRUE.equals(attribute.getAssociation())) {
-                    attribute.setShortLabel(null);
-                    attribute.setLongLabel(null);
+                    attribute.setShortLabel(resolveLabel(staticMetadataPath, fallbackPaths, attribute.getReferenceModel(), attribute.getAttributeName()));
+                    attribute.setLongLabel(attribute.getLongLabel() != null ? attribute.getLongLabel() : attribute.getShortLabel());
                 } else {
-                    if (attribute.getShortLabel() == null) {
-                        attribute.setShortLabel("");
+                    if (attribute.getShortLabel() == null || attribute.getShortLabel().isBlank()) {
+                        attribute.setShortLabel(resolveLabel(staticMetadataPath, fallbackPaths, attribute.getReferenceModel(), attribute.getAttributeName()));
                     }
-                    if (attribute.getLongLabel() == null) {
-                        attribute.setLongLabel("");
+                    if (attribute.getLongLabel() == null || attribute.getLongLabel().isBlank()) {
+                        attribute.setLongLabel(attribute.getShortLabel());
                     }
                 }
             }
@@ -67,6 +68,29 @@ public class DynamicMetadataBuildService {
                 applyLabels(attribute.getDomainModel().getAttributes(), staticMetadataPath, fallbackPaths);
             }
         }
+    }
+
+    private String resolveLabel(String staticMetadataPath, List<String> fallbackPaths, String referenceModel, String fallbackLabel) {
+        String label = staticMetadataResolver.resolveLabel(staticMetadataPath, referenceModel);
+        if (label != null && !label.equals(referenceModel)) {
+            return label;
+        }
+        if (fallbackPaths != null) {
+            for (String fallbackPath : fallbackPaths) {
+                label = staticMetadataResolver.resolveLabel(fallbackPath, referenceModel);
+                if (label != null && !label.equals(referenceModel)) {
+                    return label;
+                }
+            }
+        }
+        String candidate = fallbackLabel;
+        if (candidate == null || candidate.isBlank()) {
+            candidate = referenceModel;
+            if (candidate != null && candidate.contains("/")) {
+                candidate = candidate.substring(candidate.lastIndexOf('/') + 1);
+            }
+        }
+        return MetadataUtils.toLabel(candidate);
     }
 
 }
