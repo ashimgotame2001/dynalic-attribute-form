@@ -1,7 +1,5 @@
 package com.example.dynamicform.platform.dto;
 
-import com.example.dynamicform.product.entity.RelationshipAuditEntity;
-
 import java.time.LocalDateTime;
 
 /**
@@ -17,17 +15,4 @@ public record PlatformAuditEntryResponse(
         LocalDateTime timestamp,
         String userId
 ) {
-
-    public static PlatformAuditEntryResponse fromEntity(RelationshipAuditEntity entity) {
-        return new PlatformAuditEntryResponse(
-                entity.getId(),
-                entity.getAction().name(),
-                entity.getEntityType(),
-                entity.getEntityId(),
-                entity.getOldValue(),
-                entity.getNewValue(),
-                entity.getTimestamp(),
-                entity.getUserId()
-        );
-    }
 }

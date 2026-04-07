@@ -2,8 +2,6 @@ package com.example.dynamicform.product.service;
 
 import com.example.dynamicform.product.dto.RelationshipDefinitionDTO;
 import com.example.dynamicform.product.dto.RelationshipInstanceDTO;
-import com.example.dynamicform.product.entity.RelationshipDefinitionEntity;
-import com.example.dynamicform.product.entity.RelationshipInstanceEntity;
 
 import java.util.List;
 import java.util.Map;

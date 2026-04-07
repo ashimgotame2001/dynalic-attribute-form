@@ -3,7 +3,6 @@ package com.example.dynamicform.platform.metadata;
 import com.example.dynamicform.platform.compatibility.BackwardCompatibilityService;
 import com.example.dynamicform.platform.service.RuntimeRelationshipPlatform;
 import com.example.dynamicform.product.dto.RelationshipInstanceDTO;
-import com.example.dynamicform.product.service.RelationshipAuditService;
 import com.example.dynamicform.platform.validation.ConstraintValidationEngine;
 import com.example.dynamicform.platform.validation.ValidationError;
 import com.example.dynamicform.platform.validation.DomainIntegrityValidationService;
@@ -31,7 +30,6 @@ public class DomainModelAccessorImpl implements DomainModelAccessor<Map<String, 
     private final DomainIntegrityValidationService domainIntegrityService;
     private final BackwardCompatibilityService backwardCompatibilityService;
     private final SchemaVersioningService schemaVersioningService;
-    private final RelationshipAuditService auditService;
 
     private String entityTypeName = "DomainModel";
 
@@ -41,7 +39,6 @@ public class DomainModelAccessorImpl implements DomainModelAccessor<Map<String, 
                                    DomainIntegrityValidationService domainIntegrityService,
                                    BackwardCompatibilityService backwardCompatibilityService,
                                    SchemaVersioningService schemaVersioningService,
-                                   RelationshipAuditService auditService,
                                    String entityTypeName) {
         this.persistence = persistence;
         this.relationshipPlatform = relationshipPlatform;
@@ -49,7 +46,6 @@ public class DomainModelAccessorImpl implements DomainModelAccessor<Map<String, 
         this.domainIntegrityService = domainIntegrityService;
         this.backwardCompatibilityService = backwardCompatibilityService;
         this.schemaVersioningService = schemaVersioningService;
-        this.auditService = auditService;
         this.entityTypeName = entityTypeName;
     }
 
@@ -60,9 +56,6 @@ public class DomainModelAccessorImpl implements DomainModelAccessor<Map<String, 
             throw new IllegalArgumentException("Data cannot be null");
         }
 
-        Map<String, Object> previous = persistence.findById(entityId, entityTypeName)
-                .map(HashMap::new)
-                .orElse(null);
         Map<String, Object> payload = applyCompatibility(entityTypeName, data);
 
         // Perform tight domain integrity validation
@@ -86,7 +79,6 @@ public class DomainModelAccessorImpl implements DomainModelAccessor<Map<String, 
         }
 
         Map<String, Object> saved = persistence.save(entityId, entityTypeName, payload);
-        auditService.logDataChange(entityTypeName, entityId, previous == null ? "CREATE" : "UPDATE", previous, saved, "system");
         logger.info("Saved entity: {}/{} with domain integrity validated", entityTypeName, entityId);
         return saved;
     }
@@ -127,10 +119,8 @@ public class DomainModelAccessorImpl implements DomainModelAccessor<Map<String, 
 
     @Override
     public boolean delete(String entityId) {
-        Optional<Map<String, Object>> previous = persistence.findById(entityId, entityTypeName);
         boolean deleted = persistence.delete(entityId, entityTypeName);
         if (deleted) {
-            auditService.logDataChange(entityTypeName, entityId, "DELETE", previous.orElse(null), null, "system");
             logger.info("Deleted entity: {}/{}", entityTypeName, entityId);
         }
         return deleted;

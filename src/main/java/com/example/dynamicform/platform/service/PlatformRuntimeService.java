@@ -9,7 +9,6 @@ import com.example.dynamicform.platform.versioning.SchemaVersion;
 import com.example.dynamicform.platform.versioning.SchemaVersioningService;
 import com.example.dynamicform.product.dto.RelationshipDefinitionDTO;
 import com.example.dynamicform.product.dto.RelationshipInstanceDTO;
-import com.example.dynamicform.product.service.RelationshipAuditService;
 import org.springframework.stereotype.Service;
 
 import java.util.LinkedHashMap;
@@ -37,17 +36,14 @@ public class PlatformRuntimeService {
 
     private final DomainModelAccessLayer accessLayer;
     private final RuntimeRelationshipPlatform relationshipPlatform;
-    private final RelationshipAuditService auditService;
     private final SchemaVersioningService schemaVersioningService;
 
     public PlatformRuntimeService(
             DomainModelAccessLayer accessLayer,
             RuntimeRelationshipPlatform relationshipPlatform,
-            RelationshipAuditService auditService,
             SchemaVersioningService schemaVersioningService) {
         this.accessLayer = accessLayer;
         this.relationshipPlatform = relationshipPlatform;
-        this.auditService = auditService;
         this.schemaVersioningService = schemaVersioningService;
     }
 
@@ -131,11 +127,7 @@ public class PlatformRuntimeService {
         Optional<SchemaVersion> latestSchema = schemaVersioningService.getLatestSchemaVersion(entityType);
         boolean compatible = latestSchema.isEmpty() || latestSchema.get().getVersionNumber() == schemaVersion;
 
-        List<PlatformAuditEntryResponse> auditTrail = auditService
-                .getAuditHistory("DATA:" + entityType, entityId)
-                .stream()
-                .map(PlatformAuditEntryResponse::fromEntity)
-                .toList();
+        List<PlatformAuditEntryResponse> auditTrail = List.of();
 
         Map<String, Object> platform = new LinkedHashMap<>();
         platform.put("persistenceAbstraction", "DomainModelPersistence");

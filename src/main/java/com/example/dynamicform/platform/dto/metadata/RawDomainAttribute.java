@@ -1,5 +1,6 @@
 package com.example.dynamicform.platform.dto.metadata;
 
+import com.example.dynamicform.product.enums.RelationshipType;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
@@ -34,6 +35,9 @@ public class RawDomainAttribute {
     private Boolean association;
 
     private Boolean composition;
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private RelationshipType relationshipType;
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private Boolean visible;

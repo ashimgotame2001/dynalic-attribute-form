@@ -5,7 +5,6 @@ import com.example.dynamicform.platform.service.RuntimeRelationshipPlatform;
 import com.example.dynamicform.platform.validation.ConstraintValidationEngine;
 import com.example.dynamicform.platform.validation.DomainIntegrityValidationService;
 import com.example.dynamicform.platform.versioning.SchemaVersioningService;
-import com.example.dynamicform.product.service.RelationshipAuditService;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
@@ -26,7 +25,6 @@ public class DomainModelAccessLayerImpl implements DomainModelAccessLayer {
     private final DomainIntegrityValidationService domainIntegrityValidationService;
     private final BackwardCompatibilityService backwardCompatibilityService;
     private final SchemaVersioningService schemaVersioningService;
-    private final RelationshipAuditService auditService;
     private final ConcurrentMap<String, DomainModelAccessor<?>> accessors = new ConcurrentHashMap<>();
 
     public DomainModelAccessLayerImpl(
@@ -35,15 +33,13 @@ public class DomainModelAccessLayerImpl implements DomainModelAccessLayer {
             ConstraintValidationEngine validationEngine,
             DomainIntegrityValidationService domainIntegrityValidationService,
             BackwardCompatibilityService backwardCompatibilityService,
-            SchemaVersioningService schemaVersioningService,
-            RelationshipAuditService auditService) {
+            SchemaVersioningService schemaVersioningService) {
         this.persistence = persistence;
         this.relationshipPlatform = relationshipPlatform;
         this.validationEngine = validationEngine;
         this.domainIntegrityValidationService = domainIntegrityValidationService;
         this.backwardCompatibilityService = backwardCompatibilityService;
         this.schemaVersioningService = schemaVersioningService;
-        this.auditService = auditService;
     }
 
     @Override
@@ -64,7 +60,6 @@ public class DomainModelAccessLayerImpl implements DomainModelAccessLayer {
                 domainIntegrityValidationService,
                 backwardCompatibilityService,
                 schemaVersioningService,
-                auditService,
                 entityTypeName
         );
     }

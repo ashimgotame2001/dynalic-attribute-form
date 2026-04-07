@@ -1,5 +1,6 @@
 package com.example.dynamicform.product.service;
 
+import com.example.dynamicform.platform.service.ResponseLocalizationService;
 import com.example.dynamicform.product.dto.RSPWiseDocumentSetupRequest;
 import com.example.dynamicform.product.dto.RSPWiseDocumentSetupResponse;
 import com.example.dynamicform.product.dto.RSPWiseDocumentTranslationRequest;
@@ -20,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -33,46 +35,40 @@ public class RSPWiseDocumentSetupServiceImpl implements RSPWiseDocumentSetupServ
     private final DocumentRepository documentRepository;
     private final ObjectMapper objectMapper;
     private final RSPWiseDocumentFieldConfigAdapter fieldConfigAdapter;
-
-    private static final String DOCUMENT_NUMBER_REQUIRED = "isDocumentNumberRequired";
-    private static final String BACK_REQUIRED = "isBackRequired";
-    private static final String ISSUED_COUNTRY_REQUIRED = "isIssuedCountryRequired";
-    private static final String EXPIRY_DATE_REQUIRED = "isExpiryDateRequired";
-    private static final String PRIMARY_CONTENT_REQUIRED = "isPrimaryContentRequired";
-    private static final String SECONDARY_CONTENT_REQUIRED = "isSecondaryContentRequired";
+    private final ResponseLocalizationService responseLocalizationService;
 
     @Override
     @Transactional
-    public RSPWiseDocumentSetupResponse create(RSPWiseDocumentSetupRequest request) {
+    public RSPWiseDocumentSetupResponse create(RSPWiseDocumentSetupRequest request, String language) {
         DocumentEntity document = documentRepository.findById(request.getDocumentId())
                 .orElseThrow(() -> new RuntimeException("Document not found with id: " + request.getDocumentId()));
 
         List<RSPWiseDocumentSetupRequest.FieldSpec> fields = defaultFields(request.getFields());
         Map<String, RSPWiseDocumentSetupRequest.FieldSpec> fieldMap = toFieldMap(fields);
-        boolean secondaryContentRequired = isRequired(fieldMap, SECONDARY_CONTENT_REQUIRED);
-        boolean backRequired = isRequired(fieldMap, BACK_REQUIRED) || secondaryContentRequired;
+        boolean secondaryContentRequired = isRequired(fieldMap, RSPWiseDocumentReferenceModels.SECONDARY_CONTENT_REQUIRED);
+        boolean backRequired = secondaryContentRequired;
         RSPWiseDocumentSetupEntity entity = RSPWiseDocumentSetupEntity.builder()
                 .document(document)
                 .isPrimary(request.getIsPrimary())
                 .rspId(request.getRspId())
                 .metadataJson(writeMetadata(fields))
-                .isDocumentNumberRequired(isRequired(fieldMap, DOCUMENT_NUMBER_REQUIRED))
+                .isDocumentNumberRequired(isRequired(fieldMap, RSPWiseDocumentReferenceModels.DOCUMENT_NUMBER_REQUIRED))
                 .isBackRequired(backRequired)
-                .isIssuedCountryRequired(isRequired(fieldMap, ISSUED_COUNTRY_REQUIRED))
-                .isExpiryDateRequired(isRequired(fieldMap, EXPIRY_DATE_REQUIRED))
-                .isPrimaryContentRequired(isRequired(fieldMap, PRIMARY_CONTENT_REQUIRED))
+                .isIssuedCountryRequired(isRequired(fieldMap, RSPWiseDocumentReferenceModels.ISSUED_COUNTRY_REQUIRED))
+                .isExpiryDateRequired(isRequired(fieldMap, RSPWiseDocumentReferenceModels.EXPIRY_DATE_REQUIRED))
+                .isPrimaryContentRequired(isRequired(fieldMap, RSPWiseDocumentReferenceModels.PRIMARY_CONTENT_REQUIRED))
                 .isSecondaryContentRequired(secondaryContentRequired || backRequired)
                 .fieldConfigs(new java.util.LinkedHashSet<>())
                 .build();
         entity.getFieldConfigs().addAll(fieldConfigAdapter.toEntities(entity, fields));
 
         RSPWiseDocumentSetupEntity saved = repository.save(entity);
-        return mapToResponse(saved);
+        return mapToResponse(saved, language);
     }
 
     @Override
     @Transactional
-    public RSPWiseDocumentSetupResponse update(UUID id, RSPWiseDocumentSetupRequest request) {
+    public RSPWiseDocumentSetupResponse update(UUID id, RSPWiseDocumentSetupRequest request, String language) {
         RSPWiseDocumentSetupEntity entity = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("RSPWiseDocumentSetup not found with id: " + id));
 
@@ -81,33 +77,33 @@ public class RSPWiseDocumentSetupServiceImpl implements RSPWiseDocumentSetupServ
 
         List<RSPWiseDocumentSetupRequest.FieldSpec> fields = defaultFields(request.getFields());
         Map<String, RSPWiseDocumentSetupRequest.FieldSpec> fieldMap = toFieldMap(fields);
-        boolean secondaryContentRequired = isRequired(fieldMap, SECONDARY_CONTENT_REQUIRED);
-        boolean backRequired = isRequired(fieldMap, BACK_REQUIRED) || secondaryContentRequired;
+        boolean secondaryContentRequired = isRequired(fieldMap, RSPWiseDocumentReferenceModels.SECONDARY_CONTENT_REQUIRED);
+        boolean backRequired = secondaryContentRequired;
         entity.setDocument(document);
         entity.setIsPrimary(request.getIsPrimary());
         entity.setRspId(request.getRspId());
         entity.setMetadataJson(writeMetadata(fields));
-        entity.setDocumentNumberRequired(isRequired(fieldMap, DOCUMENT_NUMBER_REQUIRED));
+        entity.setDocumentNumberRequired(isRequired(fieldMap, RSPWiseDocumentReferenceModels.DOCUMENT_NUMBER_REQUIRED));
         entity.setBackRequired(backRequired);
-        entity.setIssuedCountryRequired(isRequired(fieldMap, ISSUED_COUNTRY_REQUIRED));
-        entity.setExpiryDateRequired(isRequired(fieldMap, EXPIRY_DATE_REQUIRED));
-        entity.setPrimaryContentRequired(isRequired(fieldMap, PRIMARY_CONTENT_REQUIRED));
+        entity.setIssuedCountryRequired(isRequired(fieldMap, RSPWiseDocumentReferenceModels.ISSUED_COUNTRY_REQUIRED));
+        entity.setExpiryDateRequired(isRequired(fieldMap, RSPWiseDocumentReferenceModels.EXPIRY_DATE_REQUIRED));
+        entity.setPrimaryContentRequired(isRequired(fieldMap, RSPWiseDocumentReferenceModels.PRIMARY_CONTENT_REQUIRED));
         entity.setSecondaryContentRequired(secondaryContentRequired || backRequired);
         entity.getFieldConfigs().clear();
         entity.getFieldConfigs().addAll(fieldConfigAdapter.toEntities(entity, fields));
 
         RSPWiseDocumentSetupEntity updated = repository.save(entity);
-        return mapToResponse(updated);
+        return mapToResponse(updated, language);
     }
 
     @Override
     @Transactional
-    public RSPWiseDocumentSetupResponse updateTranslations(RSPWiseDocumentTranslationRequest request) {
+    public RSPWiseDocumentSetupResponse updateTranslations(RSPWiseDocumentTranslationRequest request, String language) {
         RSPWiseDocumentSetupEntity entity = resolveTranslationTarget(request);
         Map<String, RSPWiseDocumentFieldConfigEntity> fieldsByReferenceModel = new HashMap<>();
         for (RSPWiseDocumentFieldConfigEntity fieldConfig : entity.getFieldConfigs()) {
             if (fieldConfig.getReferenceModel() != null) {
-                fieldsByReferenceModel.put(fieldConfig.getReferenceModel(), fieldConfig);
+                fieldsByReferenceModel.put(RSPWiseDocumentReferenceModels.normalize(fieldConfig.getReferenceModel()), fieldConfig);
             }
         }
 
@@ -116,7 +112,8 @@ public class RSPWiseDocumentSetupServiceImpl implements RSPWiseDocumentSetupServ
                 if (fieldTranslation == null || fieldTranslation.getReferenceModel() == null) {
                     continue;
                 }
-                RSPWiseDocumentFieldConfigEntity fieldEntity = fieldsByReferenceModel.get(fieldTranslation.getReferenceModel());
+                RSPWiseDocumentFieldConfigEntity fieldEntity = fieldsByReferenceModel.get(
+                        RSPWiseDocumentReferenceModels.normalize(fieldTranslation.getReferenceModel()));
                 if (fieldEntity == null) {
                     continue;
                 }
@@ -125,22 +122,22 @@ public class RSPWiseDocumentSetupServiceImpl implements RSPWiseDocumentSetupServ
         }
 
         entity.setMetadataJson(writeMetadata(fieldConfigAdapter.toFieldSpecs(entity)));
-        return mapToResponse(repository.save(entity));
+        return mapToResponse(repository.save(entity), language);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public RSPWiseDocumentSetupResponse getById(UUID id) {
+    public RSPWiseDocumentSetupResponse getById(UUID id, String language) {
         RSPWiseDocumentSetupEntity entity = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("RSPWiseDocumentSetup not found with id: " + id));
-        return mapToResponse(entity);
+        return mapToResponse(entity, language);
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<RSPWiseDocumentSetupResponse> getAll() {
+    public List<RSPWiseDocumentSetupResponse> getAll(String language) {
         return repository.findAll().stream()
-                .map(this::mapToResponse)
+                .map(entity -> mapToResponse(entity, language))
                 .collect(Collectors.toList());
     }
 
@@ -153,23 +150,35 @@ public class RSPWiseDocumentSetupServiceImpl implements RSPWiseDocumentSetupServ
         repository.deleteById(id);
     }
 
-    private RSPWiseDocumentSetupResponse mapToResponse(RSPWiseDocumentSetupEntity entity) {
-        Map<String, RSPWiseDocumentSetupRequest.FieldSpec> fieldMap = fieldConfigAdapter.toFieldMap(entity);
+    private RSPWiseDocumentSetupResponse mapToResponse(RSPWiseDocumentSetupEntity entity, String language) {
+        List<RSPWiseDocumentSetupRequest.FieldSpec> fields = fieldConfigAdapter.toFieldSpecs(entity);
+        Map<String, RSPWiseDocumentSetupRequest.FieldSpec> fieldMap = toFieldMap(fields);
         return RSPWiseDocumentSetupResponse.builder()
                 .id(entity.getId())
                 .documentId(entity.getDocument() != null ? entity.getDocument().getId() : null)
                 .documentName(entity.getDocument() != null ? entity.getDocument().getDocumentName() : null)
                 .isPrimary(entity.getIsPrimary())
                 .rspId(entity.getRspId())
-                .isDocumentNumberRequired(resolveRequired(fieldMap, DOCUMENT_NUMBER_REQUIRED, entity.isDocumentNumberRequired()))
-                .isBackRequired(resolveRequired(fieldMap, BACK_REQUIRED,
-                        resolveRequired(fieldMap, SECONDARY_CONTENT_REQUIRED, entity.isBackRequired())))
-                .isIssuedCountryRequired(resolveRequired(fieldMap, ISSUED_COUNTRY_REQUIRED, entity.isIssuedCountryRequired()))
-                .isExpiryDateRequired(resolveRequired(fieldMap, EXPIRY_DATE_REQUIRED, entity.isExpiryDateRequired()))
-                .isPrimaryContentRequired(resolveRequired(fieldMap, PRIMARY_CONTENT_REQUIRED, entity.isPrimaryContentRequired()))
-                .isSecondaryContentRequired(resolveRequired(fieldMap, SECONDARY_CONTENT_REQUIRED,
-                        resolveRequired(fieldMap, BACK_REQUIRED, entity.isSecondaryContentRequired())))
+                .fields(toResponseFields(fields, language))
+                .isDocumentNumberRequired(resolveRequired(fieldMap, RSPWiseDocumentReferenceModels.DOCUMENT_NUMBER_REQUIRED, entity.isDocumentNumberRequired()))
+                .isBackRequired(resolveRequired(fieldMap, RSPWiseDocumentReferenceModels.SECONDARY_CONTENT_REQUIRED, entity.isBackRequired()))
+                .isIssuedCountryRequired(resolveRequired(fieldMap, RSPWiseDocumentReferenceModels.ISSUED_COUNTRY_REQUIRED, entity.isIssuedCountryRequired()))
+                .isExpiryDateRequired(resolveRequired(fieldMap, RSPWiseDocumentReferenceModels.EXPIRY_DATE_REQUIRED, entity.isExpiryDateRequired()))
+                .isPrimaryContentRequired(resolveRequired(fieldMap, RSPWiseDocumentReferenceModels.PRIMARY_CONTENT_REQUIRED, entity.isPrimaryContentRequired()))
+                .isSecondaryContentRequired(resolveRequired(fieldMap, RSPWiseDocumentReferenceModels.SECONDARY_CONTENT_REQUIRED, entity.isSecondaryContentRequired()))
                 .build();
+    }
+
+    private List<RSPWiseDocumentSetupResponse.FieldSpec> toResponseFields(List<RSPWiseDocumentSetupRequest.FieldSpec> fields, String language) {
+        return fields.stream()
+                .map(field -> RSPWiseDocumentSetupResponse.FieldSpec.builder()
+                        .referenceModel(field.getReferenceModel())
+                        .visible(field.getVisible())
+                        .shortLabel(resolveLocalized(field.getShortLabel(), field.getShortLabelI18n(), language))
+                        .longLabel(resolveLocalized(field.getLongLabel(), field.getLongLabelI18n(), language))
+                        .validations(localizeValidationsForResponse(field.getValidations(), language))
+                        .build())
+                .toList();
     }
 
     private boolean resolveRequired(Map<String, RSPWiseDocumentSetupRequest.FieldSpec> fieldMap, String referenceModel, boolean fallback) {
@@ -188,17 +197,22 @@ public class RSPWiseDocumentSetupServiceImpl implements RSPWiseDocumentSetupServ
         Map<String, RSPWiseDocumentSetupRequest.FieldSpec> fieldMap = new HashMap<>(fields.size());
         for (RSPWiseDocumentSetupRequest.FieldSpec field : fields) {
             if (field != null && field.getReferenceModel() != null) {
-                fieldMap.put(field.getReferenceModel(), field);
+                fieldMap.put(RSPWiseDocumentReferenceModels.normalize(field.getReferenceModel()), field);
             }
         }
         return fieldMap;
     }
 
     private boolean isRequired(RSPWiseDocumentSetupRequest.FieldSpec field) {
-        if (field == null || field.getValidations() == null || field.getValidations().getRequired() == null) {
+        if (field == null || field.getValidations() == null) {
             return false;
         }
-        return Boolean.TRUE.equals(field.getValidations().getRequired().getValue());
+        Map<String, Object> validations = asMap(field.getValidations());
+        Object required = validations.get("required");
+        if (!(required instanceof Map<?, ?> requiredMap)) {
+            return false;
+        }
+        return Boolean.TRUE.equals(requiredMap.get("value"));
     }
 
     private String writeMetadata(List<RSPWiseDocumentSetupRequest.FieldSpec> fields) {
@@ -209,7 +223,21 @@ public class RSPWiseDocumentSetupServiceImpl implements RSPWiseDocumentSetupServ
         }
     }
     private List<RSPWiseDocumentSetupRequest.FieldSpec> defaultFields(List<RSPWiseDocumentSetupRequest.FieldSpec> fields) {
-        return fields == null ? Collections.emptyList() : fields;
+        if (fields == null || fields.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return fields.stream()
+                .filter(java.util.Objects::nonNull)
+                .map(field -> RSPWiseDocumentSetupRequest.FieldSpec.builder()
+                        .referenceModel(RSPWiseDocumentReferenceModels.normalize(field.getReferenceModel()))
+                        .visible(field.getVisible())
+                        .shortLabel(field.getShortLabel())
+                        .shortLabelI18n(field.getShortLabelI18n())
+                        .longLabel(field.getLongLabel())
+                        .longLabelI18n(field.getLongLabelI18n())
+                        .validations(field.getValidations())
+                        .build())
+                .toList();
     }
 
     private RSPWiseDocumentSetupEntity resolveTranslationTarget(RSPWiseDocumentTranslationRequest request) {
@@ -236,17 +264,26 @@ public class RSPWiseDocumentSetupServiceImpl implements RSPWiseDocumentSetupServ
         mergeLabelTranslations(fieldEntity, translationsByLocale, fieldTranslation.getShortLabelI18n(), true);
         mergeLabelTranslations(fieldEntity, translationsByLocale, fieldTranslation.getLongLabelI18n(), false);
 
-        if (fieldTranslation.getValidations() == null || fieldTranslation.getValidations().getRequired() == null) {
+        Map<String, Object> validations = asMap(fieldTranslation.getValidations());
+        if (validations.isEmpty()) {
             return;
         }
-        RSPWiseDocumentFieldValidationEntity requiredValidation = fieldEntity.getValidations().stream()
-                .filter(validation -> validation.getValidationType() == com.example.dynamicform.product.entity.RSPWiseDocumentFieldValidationType.REQUIRED)
-                .findFirst()
-                .orElse(null);
-        if (requiredValidation == null) {
-            return;
+        Map<String, RSPWiseDocumentFieldValidationEntity> validationsByType = new LinkedHashMap<>();
+        for (RSPWiseDocumentFieldValidationEntity validation : fieldEntity.getValidations()) {
+            if (validation.getValidationType() != null) {
+                validationsByType.put(validation.getValidationType(), validation);
+            }
         }
-        mergeValidationTranslations(requiredValidation, fieldTranslation.getValidations().getRequired().getMessageI18n());
+        for (Map.Entry<String, Object> entry : validations.entrySet()) {
+            RSPWiseDocumentFieldValidationEntity validationEntity = validationsByType.get(entry.getKey());
+            if (validationEntity == null || !(entry.getValue() instanceof Map<?, ?> params)) {
+                continue;
+            }
+            Object messageI18n = params.get("messageI18n");
+            if (messageI18n instanceof Map<?, ?> messageMap) {
+                mergeValidationTranslations(validationEntity, objectMapper.convertValue(messageMap, new TypeReference<Map<String, String>>() {}));
+            }
+        }
     }
 
     private void mergeLabelTranslations(RSPWiseDocumentFieldConfigEntity fieldEntity,
@@ -301,5 +338,64 @@ public class RSPWiseDocumentSetupServiceImpl implements RSPWiseDocumentSetupServ
             });
             translation.setMessage(entry.getValue());
         }
+    }
+
+    private Map<String, Object> asMap(Object source) {
+        if (!(source instanceof Map<?, ?> map) || map.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        return objectMapper.convertValue(map, new TypeReference<Map<String, Object>>() {});
+    }
+
+    private Object localizeValidationsForResponse(Object source, String language) {
+        if (!(source instanceof Map<?, ?> rawMap) || rawMap.isEmpty()) {
+            return source;
+        }
+        Map<String, Object> validations = objectMapper.convertValue(rawMap, new TypeReference<Map<String, Object>>() {});
+        Map<String, Object> response = new LinkedHashMap<>();
+        for (Map.Entry<String, Object> entry : validations.entrySet()) {
+            if (!(entry.getValue() instanceof Map<?, ?> rawParams)) {
+                response.put(entry.getKey(), entry.getValue());
+                continue;
+            }
+            Map<String, Object> params = objectMapper.convertValue(rawParams, new TypeReference<Map<String, Object>>() {});
+            String localizedMessage = resolveLocalized(
+                    params.get("message") instanceof String str ? str : null,
+                    extractStringMap(params.get("messageI18n")),
+                    language);
+            if (localizedMessage != null) {
+                params.put("message", localizedMessage);
+            }
+            params.remove("messageI18n");
+            response.put(entry.getKey(), params);
+        }
+        return response;
+    }
+
+    private Map<String, String> extractStringMap(Object source) {
+        if (!(source instanceof Map<?, ?> map) || map.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        return objectMapper.convertValue(map, new TypeReference<Map<String, String>>() {});
+    }
+
+    private String resolveLocalized(String defaultValue, Map<String, String> translations, String language) {
+        if (translations == null || translations.isEmpty() || language == null || language.isBlank()) {
+            return defaultValue;
+        }
+        String normalized = responseLocalizationService.resolveLanguage(language, null);
+        if (normalized == null) {
+            return defaultValue;
+        }
+        if (translations.containsKey(normalized) && translations.get(normalized) != null) {
+            return translations.get(normalized);
+        }
+        for (Map.Entry<String, String> entry : translations.entrySet()) {
+            String key = responseLocalizationService.resolveLanguage(entry.getKey(), null);
+            if (normalized.equals(key) && entry.getValue() != null) {
+                return entry.getValue();
+            }
+        }
+        return defaultValue;
     }
 }

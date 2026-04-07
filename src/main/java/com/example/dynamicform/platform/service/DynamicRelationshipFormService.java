@@ -67,9 +67,10 @@ public class DynamicRelationshipFormService {
                 .attributeName(attributeName)
                 .attributeType(relationship.getTargetEntity())
                 .reference(Boolean.valueOf(relationship.isReference()))
-                .association(Boolean.valueOf(relationship.isAssociation()))
-                .composition(Boolean.valueOf(relationship.isComposition()))
-                .collection(Boolean.valueOf(relationship.isCollection()))
+                .association(Boolean.valueOf(isAssociation(relationship.getRelationshipType())))
+                .composition(Boolean.valueOf(isComposition(relationship.getRelationshipType())))
+                .collection(Boolean.valueOf(isCollection(relationship.getRelationshipType())))
+                .relationshipType(relationship.getRelationshipType())
                 .visible(Boolean.TRUE)
                 .shortLabel(labelBase)
                 .longLabel("Runtime relationship: " + relationship.getRelationshipName())
@@ -115,6 +116,7 @@ public class DynamicRelationshipFormService {
             return null;
         }
 
+        List<RelationshipDefinitionDTO> applicableRelationships = collectApplicableRelationships(currentEntityCandidates);
         List<RawDomainAttribute> sourceAttributes = domainModel.getAttributes() != null
                 ? domainModel.getAttributes()
                 : List.of();
@@ -131,6 +133,7 @@ public class DynamicRelationshipFormService {
             if (attribute.getDomainModel() != null) {
                 copy.setDomainModel(augmentDomainModel(attribute.getDomainModel(), nestedCandidates));
             }
+            applyRelationshipSemantics(copy, currentEntityCandidates, applicableRelationships);
             attributes.add(copy);
             if (copy.getAttributeName() != null) {
                 existingAttributeNames.add(copy.getAttributeName());
@@ -138,9 +141,12 @@ public class DynamicRelationshipFormService {
         }
 
         for (String sourceEntity : currentEntityCandidates) {
-            List<RelationshipDefinitionDTO> relationships = relationshipPlatform.getRelationshipDefinitionsByEntity(sourceEntity);
-            for (RelationshipDefinitionDTO relationship : relationships) {
+            for (RelationshipDefinitionDTO relationship : applicableRelationships) {
                 if (!shouldRenderRelationship(sourceEntity, relationship)) {
+                    continue;
+                }
+
+                if (hasAttributeForRelationship(attributes, relationship)) {
                     continue;
                 }
 
@@ -155,6 +161,148 @@ public class DynamicRelationshipFormService {
         }
 
         return RawDomainModel.builder().attributes(attributes).build();
+    }
+
+    private List<RelationshipDefinitionDTO> collectApplicableRelationships(Set<String> currentEntityCandidates) {
+        List<RelationshipDefinitionDTO> relationships = new ArrayList<>();
+        Set<String> seenNames = new LinkedHashSet<>();
+
+        for (String entityCandidate : currentEntityCandidates) {
+            if (entityCandidate == null || entityCandidate.isBlank()) {
+                continue;
+            }
+            for (RelationshipDefinitionDTO relationship : relationshipPlatform.getRelationshipDefinitionsByEntity(entityCandidate)) {
+                if (relationship == null || relationship.getRelationshipName() == null || !relationship.isActive()) {
+                    continue;
+                }
+                if (seenNames.add(relationship.getRelationshipName())) {
+                    relationships.add(relationship);
+                }
+            }
+        }
+
+        return relationships;
+    }
+
+    private void applyRelationshipSemantics(RawDomainAttribute attribute,
+                                            Set<String> currentEntityCandidates,
+                                            List<RelationshipDefinitionDTO> applicableRelationships) {
+        if (attribute == null || applicableRelationships.isEmpty()) {
+            return;
+        }
+
+        Optional<RelationshipType> relationshipType = findRelationshipType(attribute, currentEntityCandidates, applicableRelationships);
+        if (relationshipType.isEmpty()) {
+            return;
+        }
+
+        RelationshipType effectiveType = relationshipType.get();
+        attribute.setRelationshipType(effectiveType);
+        attribute.setCollection(Boolean.valueOf(isCollection(effectiveType)));
+        attribute.setComposition(Boolean.valueOf(isComposition(effectiveType)));
+        attribute.setAssociation(Boolean.valueOf(isAssociation(effectiveType)));
+    }
+
+    private Optional<RelationshipType> findRelationshipType(RawDomainAttribute attribute,
+                                                            Set<String> currentEntityCandidates,
+                                                            List<RelationshipDefinitionDTO> applicableRelationships) {
+        return applicableRelationships.stream()
+                .map(relationship -> resolveRelationshipType(attribute, currentEntityCandidates, relationship))
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .findFirst();
+    }
+
+    private Optional<RelationshipType> resolveRelationshipType(RawDomainAttribute attribute,
+                                                               Set<String> currentEntityCandidates,
+                                                               RelationshipDefinitionDTO relationship) {
+        if (attribute == null || relationship == null || relationship.getRelationshipType() == null) {
+            return Optional.empty();
+        }
+
+        boolean currentIsSource = containsIgnoreCase(currentEntityCandidates, relationship.getSourceEntity());
+        boolean currentIsTarget = containsIgnoreCase(currentEntityCandidates, relationship.getTargetEntity());
+        boolean matchesTargetAttribute = attributeMatchesEntity(attribute, relationship.getTargetEntity());
+        boolean matchesSourceAttribute = attributeMatchesEntity(attribute, relationship.getSourceEntity());
+
+        if (currentIsSource && matchesTargetAttribute) {
+            return Optional.of(relationship.getRelationshipType());
+        }
+
+        if (currentIsTarget && matchesSourceAttribute) {
+            return Optional.of(inverseRelationshipType(relationship.getRelationshipType()));
+        }
+
+        return Optional.empty();
+    }
+
+    private boolean attributeMatchesEntity(RawDomainAttribute attribute, String entityName) {
+        if (attribute == null || entityName == null || entityName.isBlank()) {
+            return false;
+        }
+
+        Set<String> candidates = new LinkedHashSet<>();
+        if (attribute.getModelName() != null) {
+            candidates.add(attribute.getModelName());
+        }
+        if (attribute.getAttributeType() != null) {
+            candidates.add(attribute.getAttributeType());
+        }
+        if (attribute.getAttributeName() != null) {
+            candidates.add(attribute.getAttributeName());
+            candidates.add(toPascalCase(attribute.getAttributeName()));
+        }
+
+        return containsIgnoreCase(candidates, entityName);
+    }
+
+    private boolean containsIgnoreCase(Set<String> values, String candidate) {
+        if (candidate == null || candidate.isBlank()) {
+            return false;
+        }
+        return values.stream().anyMatch(value -> value != null && value.equalsIgnoreCase(candidate));
+    }
+
+    private RelationshipType inverseRelationshipType(RelationshipType relationshipType) {
+        if (relationshipType == null) {
+            return null;
+        }
+
+        return switch (relationshipType) {
+            case ONE_TO_ONE -> RelationshipType.ONE_TO_ONE;
+            case ONE_TO_MANY -> RelationshipType.MANY_TO_ONE;
+            case MANY_TO_ONE -> RelationshipType.ONE_TO_MANY;
+            case MANY_TO_MANY -> RelationshipType.MANY_TO_MANY;
+        };
+    }
+
+    private boolean isCollection(RelationshipType relationshipType) {
+        return relationshipType == RelationshipType.ONE_TO_MANY
+                || relationshipType == RelationshipType.MANY_TO_MANY;
+    }
+
+    private boolean isComposition(RelationshipType relationshipType) {
+        return relationshipType == RelationshipType.ONE_TO_ONE
+                || relationshipType == RelationshipType.ONE_TO_MANY;
+    }
+
+    private boolean isAssociation(RelationshipType relationshipType) {
+        return relationshipType == RelationshipType.MANY_TO_ONE
+                || relationshipType == RelationshipType.MANY_TO_MANY;
+    }
+
+    private boolean hasAttributeForRelationship(List<RawDomainAttribute> attributes, RelationshipDefinitionDTO relationship) {
+        if (attributes == null || relationship == null || relationship.getTargetEntity() == null) {
+            return false;
+        }
+
+        for (RawDomainAttribute attribute : attributes) {
+            if (attributeMatchesEntity(attribute, relationship.getTargetEntity())) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private Set<String> collectRootEntityCandidates(RawFormMetadata rawMetadata, String formName) {

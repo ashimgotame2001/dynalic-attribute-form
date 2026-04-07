@@ -1,4 +1,4 @@
-package com.example.dynamicform.product.config;
+package com.example.dynamicform.platform.config;
 
 import com.fasterxml.jackson.core.JsonParser;
 import org.springframework.context.annotation.Bean;

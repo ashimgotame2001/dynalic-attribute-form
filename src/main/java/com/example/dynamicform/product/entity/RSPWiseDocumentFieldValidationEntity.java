@@ -10,9 +10,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -37,12 +35,17 @@ public class RSPWiseDocumentFieldValidationEntity {
     @JoinColumn(name = "field_config_id", nullable = false)
     private RSPWiseDocumentFieldConfigEntity fieldConfig;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "validation_type", nullable = false, length = 50)
-    private RSPWiseDocumentFieldValidationType validationType;
+    @Column(name = "display_order")
+    private Integer displayOrder;
 
-    @Column(name = "enabled", nullable = false)
-    private Boolean enabled;
+    @Column(name = "validation_type", nullable = false, length = 100)
+    private String validationType;
+
+    @Column(name = "value_json", columnDefinition = "TEXT")
+    private String valueJson;
+
+    @Column(name = "pattern", length = 2000)
+    private String pattern;
 
     @Column(name = "message", length = 1000)
     private String message;

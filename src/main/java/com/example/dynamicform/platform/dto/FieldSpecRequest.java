@@ -1,7 +1,5 @@
 package com.example.dynamicform.platform.dto;
 
-import com.example.dynamicform.product.enums.ContractFor;
-import com.example.dynamicform.product.enums.DynamicFieldFor;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

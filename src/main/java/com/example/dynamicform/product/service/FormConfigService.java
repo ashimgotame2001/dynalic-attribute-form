@@ -187,7 +187,6 @@ public class FormConfigService {
 
         try {
 
-            // Get enabled reference models from RSP contracts
             List<com.example.dynamicform.product.dto.RSPAttributeContractResponse> contracts = rspAttributeContractService.findByRspId(rspId, module);
             java.util.Set<String> enabledReferenceModels = contracts.stream()
                     .map(c -> c.getReferenceModel().replace(".", "/"))
@@ -206,42 +205,6 @@ public class FormConfigService {
                             .build()
             );
 
-            // Enhance document collection metadata with RSP-specific primary/secondary counts
-            if (enabledReferenceModels.contains("document")) {
-                com.example.dynamicform.product.dto.RSPAttributeContractResponse docContract = contracts.stream()
-                        .filter(c -> "document".equals(c.getReferenceModel()))
-                        .findFirst()
-                        .orElse(null);
-
-                if (docContract != null && (docContract.getMinPrimaryDocuments() != null || docContract.getMinSecondaryDocuments() != null)) {
-                    metadata.getDomainModel().getAttributes().stream()
-                            .filter(attr -> "document".equals(attr.getAttributeName()))
-                            .findFirst()
-                            .ifPresent(attr -> {
-                                List<java.util.Map<String, Object>> validations = attr.getValidations();
-                                if (validations == null) {
-                                    validations = new java.util.ArrayList<>();
-                                    attr.setValidations(validations);
-                                }
-                                if (docContract.getMinPrimaryDocuments() != null) {
-                                    java.util.Map<String, Object> rule = new java.util.HashMap<>();
-                                    java.util.Map<String, Object> params = new java.util.HashMap<>();
-                                    params.put("value", docContract.getMinPrimaryDocuments());
-                                    params.put("message", "At least " + docContract.getMinPrimaryDocuments() + " primary document(s) required");
-                                    rule.put("minPrimaryDocuments", params);
-                                    validations.add(rule);
-                                }
-                                if (docContract.getMinSecondaryDocuments() != null) {
-                                    java.util.Map<String, Object> rule = new java.util.HashMap<>();
-                                    java.util.Map<String, Object> params = new java.util.HashMap<>();
-                                    params.put("value", docContract.getMinSecondaryDocuments());
-                                    params.put("message", "At least " + docContract.getMinSecondaryDocuments() + " secondary document(s) required");
-                                    rule.put("minSecondaryDocuments", params);
-                                    validations.add(rule);
-                                }
-                    });
-                }
-            }
 
             String metadataJson = objectMapper.writeValueAsString(metadata);
 

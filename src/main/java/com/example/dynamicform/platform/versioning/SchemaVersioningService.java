@@ -1,6 +1,4 @@
 package com.example.dynamicform.platform.versioning;
-
-import com.example.dynamicform.product.service.RelationshipAuditService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
@@ -20,13 +18,11 @@ public class SchemaVersioningService {
     private static final Logger logger = LoggerFactory.getLogger(SchemaVersioningService.class);
 
     private final ObjectMapper objectMapper;
-    private final RelationshipAuditService auditService;
     // schemaName -> list of versions sorted by versionNumber
     private final Map<String, List<SchemaVersion>> schemaVersions = new HashMap<>();
 
-    public SchemaVersioningService(ObjectMapper objectMapper, RelationshipAuditService auditService) {
+    public SchemaVersioningService(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
-        this.auditService = auditService;
     }
 
     /**
@@ -51,7 +47,6 @@ public class SchemaVersioningService {
         }
 
         versions.add(version);
-        auditService.logSchemaChange(schemaName, String.valueOf(nextVersion), "CREATE", null, version, version.getCreatedBy());
         logger.info("Registered schema version: {} v{}", schemaName, nextVersion);
         return version;
     }
@@ -162,9 +157,7 @@ public class SchemaVersioningService {
     public void deprecateVersion(String schemaName, int versionNumber) {
         Optional<SchemaVersion> version = getSchemaVersion(schemaName, versionNumber);
         version.ifPresent(v -> {
-            SchemaVersion previous = cloneVersion(v);
             v.setActive(false);
-            auditService.logSchemaChange(schemaName, String.valueOf(versionNumber), "UPDATE", previous, v, v.getCreatedBy());
             logger.info("Deprecated schema version: {} v{}", schemaName, versionNumber);
         });
     }
@@ -204,19 +197,5 @@ public class SchemaVersioningService {
         // In a real system, this would apply transformations based on the version differences
         logger.debug("Applying migration for {} to version {}", schemaName, toVersion);
         return data;
-    }
-
-    private SchemaVersion cloneVersion(SchemaVersion source) {
-        SchemaVersion copy = new SchemaVersion();
-        copy.setId(source.getId());
-        copy.setSchemaName(source.getSchemaName());
-        copy.setVersionNumber(source.getVersionNumber());
-        copy.setSchemaDefinition(source.getSchemaDefinition());
-        copy.setCreatedAt(source.getCreatedAt());
-        copy.setCreatedBy(source.getCreatedBy());
-        copy.setDescription(source.getDescription());
-        copy.setActive(source.isActive());
-        copy.setPreviousVersionId(source.getPreviousVersionId());
-        return copy;
     }
 }

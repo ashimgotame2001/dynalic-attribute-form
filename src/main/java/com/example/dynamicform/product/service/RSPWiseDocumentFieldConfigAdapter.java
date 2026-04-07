@@ -4,9 +4,9 @@ import com.example.dynamicform.product.dto.RSPWiseDocumentSetupRequest;
 import com.example.dynamicform.product.entity.RSPWiseDocumentFieldConfigEntity;
 import com.example.dynamicform.product.entity.RSPWiseDocumentFieldTranslationEntity;
 import com.example.dynamicform.product.entity.RSPWiseDocumentFieldValidationEntity;
-import com.example.dynamicform.product.entity.RSPWiseDocumentFieldValidationType;
 import com.example.dynamicform.product.entity.RSPWiseDocumentFieldValidationTranslationEntity;
 import com.example.dynamicform.product.entity.RSPWiseDocumentSetupEntity;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Component;
@@ -43,7 +43,7 @@ public class RSPWiseDocumentFieldConfigAdapter {
 
             RSPWiseDocumentFieldConfigEntity fieldEntity = RSPWiseDocumentFieldConfigEntity.builder()
                     .setup(setup)
-                    .referenceModel(requestField.getReferenceModel())
+                    .referenceModel(RSPWiseDocumentReferenceModels.normalize(requestField.getReferenceModel()))
                     .displayOrder(index)
                     .visible(requestField.getVisible())
                     .shortLabel(requestField.getShortLabel())
@@ -56,10 +56,7 @@ public class RSPWiseDocumentFieldConfigAdapter {
                     fieldEntity,
                     requestField.getShortLabelI18n(),
                     requestField.getLongLabelI18n()));
-            RSPWiseDocumentFieldValidationEntity requiredValidation = toRequiredValidation(fieldEntity, requestField);
-            if (requiredValidation != null) {
-                fieldEntity.getValidations().add(requiredValidation);
-            }
+            fieldEntity.getValidations().addAll(toValidationEntities(fieldEntity, requestField.getValidations()));
             entities.add(fieldEntity);
         }
         return entities;
@@ -89,60 +86,76 @@ public class RSPWiseDocumentFieldConfigAdapter {
         Map<String, RSPWiseDocumentSetupRequest.FieldSpec> fieldMap = new LinkedHashMap<>();
         for (RSPWiseDocumentSetupRequest.FieldSpec field : fieldSpecs) {
             if (field != null && field.getReferenceModel() != null) {
-                fieldMap.put(field.getReferenceModel(), field);
+                fieldMap.put(RSPWiseDocumentReferenceModels.normalize(field.getReferenceModel()), field);
             }
         }
         return fieldMap;
     }
 
-    private RSPWiseDocumentFieldValidationEntity toRequiredValidation(RSPWiseDocumentFieldConfigEntity fieldEntity,
-                                                                      RSPWiseDocumentSetupRequest.FieldSpec requestField) {
-        if (requestField.getValidations() == null || requestField.getValidations().getRequired() == null) {
-            return null;
+    private List<RSPWiseDocumentFieldValidationEntity> toValidationEntities(RSPWiseDocumentFieldConfigEntity fieldEntity,
+                                                                            Object validations) {
+        List<Map<String, Object>> normalized = normalizeValidations(validations);
+        List<RSPWiseDocumentFieldValidationEntity> entities = new ArrayList<>();
+        int index = 0;
+        for (Map<String, Object> validation : normalized) {
+            for (Map.Entry<String, Object> entry : validation.entrySet()) {
+                Map<String, Object> params = entry.getValue() instanceof Map<?, ?> map
+                        ? castMap(map)
+                        : Collections.emptyMap();
+                RSPWiseDocumentFieldValidationEntity validationEntity = RSPWiseDocumentFieldValidationEntity.builder()
+                        .fieldConfig(fieldEntity)
+                        .displayOrder(index++)
+                        .validationType(entry.getKey())
+                        .valueJson(writeJson(params.get("value")))
+                        .pattern(params.get("pattern") != null ? params.get("pattern").toString() : null)
+                        .message(params.get("message") != null ? params.get("message").toString() : null)
+                        .translations(new LinkedHashSet<>())
+                        .build();
+                validationEntity.getTranslations().addAll(toValidationTranslations(validationEntity, params.get("messageI18n")));
+                entities.add(validationEntity);
+            }
         }
-        RSPWiseDocumentFieldValidationEntity validationEntity = RSPWiseDocumentFieldValidationEntity.builder()
-                .fieldConfig(fieldEntity)
-                .validationType(RSPWiseDocumentFieldValidationType.REQUIRED)
-                .enabled(Boolean.TRUE.equals(requestField.getValidations().getRequired().getValue()))
-                .message(requestField.getValidations().getRequired().getMessage())
-                .translations(new LinkedHashSet<>())
-                .build();
-        validationEntity.getTranslations().addAll(toValidationTranslations(
-                validationEntity,
-                requestField.getValidations().getRequired().getMessageI18n()));
-        return validationEntity;
+        return entities;
     }
 
     private RSPWiseDocumentSetupRequest.FieldSpec toFieldSpec(RSPWiseDocumentFieldConfigEntity entity) {
         return RSPWiseDocumentSetupRequest.FieldSpec.builder()
-                .referenceModel(entity.getReferenceModel())
+                .referenceModel(RSPWiseDocumentReferenceModels.normalize(entity.getReferenceModel()))
                 .visible(entity.getVisible())
                 .shortLabel(entity.getShortLabel())
                 .shortLabelI18n(toFieldShortLabelI18n(entity.getTranslations()))
                 .longLabel(entity.getLongLabel())
                 .longLabelI18n(toFieldLongLabelI18n(entity.getTranslations()))
-                .validations(toValidationDefinition(entity.getValidations()))
+                .validations(toValidationPayload(entity.getValidations()))
                 .build();
     }
 
-    private RSPWiseDocumentSetupRequest.ValidationDefinition toValidationDefinition(Collection<RSPWiseDocumentFieldValidationEntity> validations) {
+    private Object toValidationPayload(Collection<RSPWiseDocumentFieldValidationEntity> validations) {
         if (validations == null || validations.isEmpty()) {
-            return null;
+            return Collections.emptyMap();
         }
-        RSPWiseDocumentFieldValidationEntity required = validations.stream()
-                .filter(validation -> validation.getValidationType() == RSPWiseDocumentFieldValidationType.REQUIRED)
-                .findFirst()
-                .orElse(null);
-        if (required == null) {
-            return null;
-        }
-        return RSPWiseDocumentSetupRequest.ValidationDefinition.builder()
-                .required(RSPWiseDocumentSetupRequest.RequiredValidation.builder()
-                        .value(Boolean.TRUE.equals(required.getEnabled()))
-                        .message(required.getMessage())
-                        .messageI18n(toValidationMessageI18n(required.getTranslations()))
-                        .build())
-                .build();
+        Map<String, Object> payload = new LinkedHashMap<>();
+        validations.stream()
+                .sorted(Comparator.comparing(v -> v.getDisplayOrder() != null ? v.getDisplayOrder() : Integer.MAX_VALUE))
+                .forEach(validation -> {
+                    Map<String, Object> params = new LinkedHashMap<>();
+                    Object value = readJson(validation.getValueJson());
+                    if (value != null) {
+                        params.put("value", value);
+                    }
+                    if (validation.getPattern() != null) {
+                        params.put("pattern", validation.getPattern());
+                    }
+                    if (validation.getMessage() != null) {
+                        params.put("message", validation.getMessage());
+                    }
+                    Map<String, String> messageI18n = toValidationMessageI18n(validation.getTranslations());
+                    if (!messageI18n.isEmpty()) {
+                        params.put("messageI18n", messageI18n);
+                    }
+                    payload.put(validation.getValidationType(), params);
+                });
+        return payload;
     }
 
     private List<RSPWiseDocumentFieldTranslationEntity> toFieldTranslations(RSPWiseDocumentFieldConfigEntity fieldEntity,
@@ -173,12 +186,13 @@ public class RSPWiseDocumentFieldConfigAdapter {
 
     private List<RSPWiseDocumentFieldValidationTranslationEntity> toValidationTranslations(
             RSPWiseDocumentFieldValidationEntity validationEntity,
-            Map<String, String> messageI18n) {
-        if (messageI18n == null || messageI18n.isEmpty()) {
+            Object messageI18n) {
+        if (!(messageI18n instanceof Map<?, ?> map) || map.isEmpty()) {
             return new ArrayList<>();
         }
-        List<RSPWiseDocumentFieldValidationTranslationEntity> translations = new ArrayList<>(messageI18n.size());
-        for (Map.Entry<String, String> entry : messageI18n.entrySet()) {
+        Map<String, String> values = objectMapper.convertValue(map, new TypeReference<Map<String, String>>() {});
+        List<RSPWiseDocumentFieldValidationTranslationEntity> translations = new ArrayList<>(values.size());
+        for (Map.Entry<String, String> entry : values.entrySet()) {
             if (entry.getKey() == null || entry.getKey().isBlank()) {
                 continue;
             }
@@ -230,6 +244,83 @@ public class RSPWiseDocumentFieldConfigAdapter {
         return messages;
     }
 
+    private List<Map<String, Object>> normalizeValidations(Object validations) {
+        if (validations == null) {
+            return Collections.emptyList();
+        }
+        if (validations instanceof List<?> list) {
+            List<Map<String, Object>> result = new ArrayList<>();
+            for (Object item : list) {
+                if (item instanceof Map<?, ?> map) {
+                    Map<String, Object> normalized = normalizeValidationEntry(castMap(map));
+                    if (!normalized.isEmpty()) {
+                        result.add(normalized);
+                    }
+                }
+            }
+            return result;
+        }
+        if (validations instanceof Map<?, ?> map) {
+            Map<String, Object> normalized = normalizeValidationEntry(castMap(map));
+            return normalized.isEmpty() ? Collections.emptyList() : List.of(normalized);
+        }
+        if (validations instanceof String str && !str.isBlank()) {
+            try {
+                Object parsed = objectMapper.readValue(str, Object.class);
+                return normalizeValidations(parsed);
+            } catch (JsonProcessingException e) {
+                return Collections.emptyList();
+            }
+        }
+        return Collections.emptyList();
+    }
+
+    private Map<String, Object> normalizeValidationEntry(Map<String, Object> validation) {
+        if (validation == null || validation.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        if (!validation.containsKey("type")) {
+            return validation;
+        }
+        Object rawType = validation.get("type");
+        if (rawType == null) {
+            return Collections.emptyMap();
+        }
+        Map<String, Object> params = new LinkedHashMap<>();
+        for (Map.Entry<String, Object> entry : validation.entrySet()) {
+            if (!"type".equals(entry.getKey()) && entry.getValue() != null) {
+                params.put(entry.getKey(), entry.getValue());
+            }
+        }
+        return Collections.singletonMap(rawType.toString(), params);
+    }
+
+    private String writeJson(Object value) {
+        if (value == null) {
+            return null;
+        }
+        try {
+            return objectMapper.writeValueAsString(value);
+        } catch (JsonProcessingException e) {
+            throw new IllegalArgumentException("Failed to serialize validation value", e);
+        }
+    }
+
+    private Object readJson(String json) {
+        if (json == null || json.isBlank()) {
+            return null;
+        }
+        try {
+            return objectMapper.readValue(json, Object.class);
+        } catch (JsonProcessingException e) {
+            return json;
+        }
+    }
+
+    private Map<String, Object> castMap(Map<?, ?> map) {
+        return objectMapper.convertValue(map, new TypeReference<Map<String, Object>>() {});
+    }
+
     private List<RSPWiseDocumentSetupRequest.FieldSpec> readLegacyMetadata(String metadataJson) {
         if (metadataJson == null || metadataJson.isBlank()) {
             return Collections.emptyList();
@@ -243,12 +334,12 @@ public class RSPWiseDocumentFieldConfigAdapter {
 
     private List<RSPWiseDocumentSetupRequest.FieldSpec> buildLegacyFallbackFields(RSPWiseDocumentSetupEntity setup) {
         List<RSPWiseDocumentSetupRequest.FieldSpec> fields = new ArrayList<>();
-        fields.add(buildLegacyField("isDocumentNumberRequired", setup.isDocumentNumberRequired()));
-        fields.add(buildLegacyField("isBackRequired", setup.isBackRequired()));
-        fields.add(buildLegacyField("isIssuedCountryRequired", setup.isIssuedCountryRequired()));
-        fields.add(buildLegacyField("isExpiryDateRequired", setup.isExpiryDateRequired()));
-        fields.add(buildLegacyField("isPrimaryContentRequired", setup.isPrimaryContentRequired()));
-        fields.add(buildLegacyField("isSecondaryContentRequired", setup.isSecondaryContentRequired()));
+        fields.add(buildLegacyField(RSPWiseDocumentReferenceModels.DOCUMENT_NUMBER_REQUIRED, setup.isDocumentNumberRequired()));
+        fields.add(buildLegacyField(RSPWiseDocumentReferenceModels.ISSUED_COUNTRY_REQUIRED, setup.isIssuedCountryRequired()));
+        fields.add(buildLegacyField(RSPWiseDocumentReferenceModels.EXPIRY_DATE_REQUIRED, setup.isExpiryDateRequired()));
+        fields.add(buildLegacyField(RSPWiseDocumentReferenceModels.PRIMARY_CONTENT_REQUIRED, setup.isPrimaryContentRequired()));
+        fields.add(buildLegacyField(RSPWiseDocumentReferenceModels.SECONDARY_CONTENT_REQUIRED,
+                setup.isSecondaryContentRequired() || setup.isBackRequired()));
         return fields;
     }
 
@@ -256,12 +347,10 @@ public class RSPWiseDocumentFieldConfigAdapter {
         return RSPWiseDocumentSetupRequest.FieldSpec.builder()
                 .referenceModel(referenceModel)
                 .visible(Boolean.TRUE)
-                .validations(RSPWiseDocumentSetupRequest.ValidationDefinition.builder()
-                        .required(RSPWiseDocumentSetupRequest.RequiredValidation.builder()
-                                .value(required)
-                                .message(DEFAULT_REQUIRED_MESSAGE)
-                                .build())
-                        .build())
+                .validations(Collections.singletonMap("required", new LinkedHashMap<>(Map.of(
+                        "value", required,
+                        "message", DEFAULT_REQUIRED_MESSAGE
+                ))))
                 .build();
     }
 }

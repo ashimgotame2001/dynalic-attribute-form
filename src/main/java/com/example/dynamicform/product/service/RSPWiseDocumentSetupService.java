@@ -8,10 +8,10 @@ import java.util.List;
 import java.util.UUID;
 
 public interface RSPWiseDocumentSetupService {
-    RSPWiseDocumentSetupResponse create(RSPWiseDocumentSetupRequest request);
-    RSPWiseDocumentSetupResponse update(UUID id, RSPWiseDocumentSetupRequest request);
-    RSPWiseDocumentSetupResponse updateTranslations(RSPWiseDocumentTranslationRequest request);
-    RSPWiseDocumentSetupResponse getById(UUID id);
-    List<RSPWiseDocumentSetupResponse> getAll();
+    RSPWiseDocumentSetupResponse create(RSPWiseDocumentSetupRequest request, String language);
+    RSPWiseDocumentSetupResponse update(UUID id, RSPWiseDocumentSetupRequest request, String language);
+    RSPWiseDocumentSetupResponse updateTranslations(RSPWiseDocumentTranslationRequest request, String language);
+    RSPWiseDocumentSetupResponse getById(UUID id, String language);
+    List<RSPWiseDocumentSetupResponse> getAll(String language);
     void delete(UUID id);
 }

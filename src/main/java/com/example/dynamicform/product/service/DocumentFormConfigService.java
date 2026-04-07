@@ -3,7 +3,7 @@ package com.example.dynamicform.product.service;
 import com.example.dynamicform.platform.dto.FieldSpecRequest;
 import com.example.dynamicform.platform.dto.metadata.RawDomainAttribute;
 import com.example.dynamicform.platform.dto.metadata.RawFormMetadata;
-import com.example.dynamicform.platform.interpreter.DtoIntrospector;
+import com.example.dynamicform.platform.core.DtoIntrospector;
 import com.example.dynamicform.product.dto.RSPWiseDocumentSetupRequest;
 import com.example.dynamicform.product.entity.RSPWiseDocumentSetupEntity;
 import com.example.dynamicform.product.model.SupportingDocument;
@@ -34,12 +34,6 @@ public class DocumentFormConfigService {
     private static final String DOCUMENT_METADATA_PATH = "document_metadata.json";
     private List<Map<String, Object>> cachedDocumentMetadata;
     private Map<String, String> cachedLabelMap;
-    private static final String DOCUMENT_NUMBER_REQUIRED = "isDocumentNumberRequired";
-    private static final String BACK_REQUIRED = "isBackRequired";
-    private static final String ISSUED_COUNTRY_REQUIRED = "isIssuedCountryRequired";
-    private static final String EXPIRY_DATE_REQUIRED = "isExpiryDateRequired";
-    private static final String PRIMARY_CONTENT_REQUIRED = "isPrimaryContentRequired";
-    private static final String SECONDARY_CONTENT_REQUIRED = "isSecondaryContentRequired";
     private static final String DEFAULT_REQUIRED_MESSAGE = "Field is required";
 
     private List<Map<String, Object>> getDocumentMetadata() {
@@ -104,7 +98,7 @@ public class DocumentFormConfigService {
             Map<String, RSPWiseDocumentSetupRequest.FieldSpec> fieldMap = new LinkedHashMap<>();
             for (RSPWiseDocumentSetupRequest.FieldSpec field : fields) {
                 if (field != null && field.getReferenceModel() != null) {
-                    fieldMap.put(field.getReferenceModel(), field);
+                    fieldMap.put(RSPWiseDocumentReferenceModels.normalize(field.getReferenceModel()), field);
                 }
             }
             return fieldMap;
@@ -117,27 +111,26 @@ public class DocumentFormConfigService {
         mappedFields.computeIfAbsent(referenceModel, key -> RSPWiseDocumentSetupRequest.FieldSpec.builder()
                 .referenceModel(referenceModel)
                 .visible(Boolean.TRUE)
-                .validations(RSPWiseDocumentSetupRequest.ValidationDefinition.builder()
-                        .required(RSPWiseDocumentSetupRequest.RequiredValidation.builder()
-                                .value(required)
-                                .message(DEFAULT_REQUIRED_MESSAGE)
-                                .build())
-                        .build())
+                .validations(requiredValidationPayload(DEFAULT_REQUIRED_MESSAGE))
                 .build());
     }
 
     private List<FieldSpecRequest.FieldSpec> buildSupportingDocumentSpecs(Map<String, RSPWiseDocumentSetupRequest.FieldSpec> fieldConfig) {
         List<FieldSpecRequest.FieldSpec> specs = new ArrayList<>();
         specs.add(alwaysRequiredSpec("documentType/id", "document/documentType/id"));
-        specs.add(toFieldSpec("issueCountry/alphaTwoCode", "document/issueCountry/alphaTwoCode", fieldConfig.get(ISSUED_COUNTRY_REQUIRED), true));
-        specs.add(toFieldSpec("documentNumber", "document/documentNumber", fieldConfig.get(DOCUMENT_NUMBER_REQUIRED), true));
+        specs.add(toFieldSpec("issueCountry/alphaTwoCode", "document/issueCountry/alphaTwoCode",
+                fieldConfig.get(RSPWiseDocumentReferenceModels.ISSUED_COUNTRY_REQUIRED), true));
+        specs.add(toFieldSpec("documentNumber", "document/documentNumber",
+                fieldConfig.get(RSPWiseDocumentReferenceModels.DOCUMENT_NUMBER_REQUIRED), true));
         specs.add(alwaysRequiredSpec("issueDate", "document/issueDate"));
-        specs.add(toFieldSpec("expiryDate", "document/expiryDate", fieldConfig.get(EXPIRY_DATE_REQUIRED), true));
-        specs.add(toFieldSpec("primaryContent", "document/primaryContent", fieldConfig.get(PRIMARY_CONTENT_REQUIRED), true));
+        specs.add(toFieldSpec("expiryDate", "document/expiryDate",
+                fieldConfig.get(RSPWiseDocumentReferenceModels.EXPIRY_DATE_REQUIRED), true));
+        specs.add(toFieldSpec("primaryContent", "document/primaryContent",
+                fieldConfig.get(RSPWiseDocumentReferenceModels.PRIMARY_CONTENT_REQUIRED), true));
         specs.add(toFieldSpec(
                 "secondaryContent",
                 "document/secondaryContent",
-                fieldConfig.getOrDefault(SECONDARY_CONTENT_REQUIRED, fieldConfig.get(BACK_REQUIRED)),
+                fieldConfig.get(RSPWiseDocumentReferenceModels.SECONDARY_CONTENT_REQUIRED),
                 true));
         return specs;
     }
@@ -164,7 +157,7 @@ public class DocumentFormConfigService {
                 .shortLabelI18n(source != null ? source.getShortLabelI18n() : null)
                 .longLabel(source != null && source.getLongLabel() != null ? source.getLongLabel() : defaultLabel)
                 .longLabelI18n(source != null ? source.getLongLabelI18n() : null)
-                .validations(isRequired(source) ? requiredValidationPayload(requiredMessage(source), requiredMessageI18n(source)) : null)
+                .validations(source != null ? normalizeValidations(source.getValidations()) : null)
                 .build();
     }
 
@@ -186,30 +179,35 @@ public class DocumentFormConfigService {
     }
 
     private String requiredMessage(RSPWiseDocumentSetupRequest.FieldSpec fieldSpec) {
-        if (fieldSpec == null
-                || fieldSpec.getValidations() == null
-                || fieldSpec.getValidations().getRequired() == null
-                || fieldSpec.getValidations().getRequired().getMessage() == null
-                || fieldSpec.getValidations().getRequired().getMessage().isBlank()) {
+        Map<String, Object> validations = normalizeValidations(fieldSpec != null ? fieldSpec.getValidations() : null);
+        Object required = validations.get("required");
+        if (!(required instanceof Map<?, ?> requiredMap)) {
             return DEFAULT_REQUIRED_MESSAGE;
         }
-        return fieldSpec.getValidations().getRequired().getMessage();
+        Object message = requiredMap.get("message");
+        return message instanceof String str && !str.isBlank() ? str : DEFAULT_REQUIRED_MESSAGE;
     }
 
     private Map<String, String> requiredMessageI18n(RSPWiseDocumentSetupRequest.FieldSpec fieldSpec) {
-        if (fieldSpec == null
-                || fieldSpec.getValidations() == null
-                || fieldSpec.getValidations().getRequired() == null) {
+        Map<String, Object> validations = normalizeValidations(fieldSpec != null ? fieldSpec.getValidations() : null);
+        Object required = validations.get("required");
+        if (!(required instanceof Map<?, ?> requiredMap) || !(requiredMap.get("messageI18n") instanceof Map<?, ?> messageMap)) {
             return null;
         }
-        return fieldSpec.getValidations().getRequired().getMessageI18n();
+        return objectMapper.convertValue(messageMap, new TypeReference<Map<String, String>>() {});
     }
 
     private boolean isRequired(RSPWiseDocumentSetupRequest.FieldSpec fieldSpec) {
-        return fieldSpec != null
-                && fieldSpec.getValidations() != null
-                && fieldSpec.getValidations().getRequired() != null
-                && Boolean.TRUE.equals(fieldSpec.getValidations().getRequired().getValue());
+        Map<String, Object> validations = normalizeValidations(fieldSpec != null ? fieldSpec.getValidations() : null);
+        Object required = validations.get("required");
+        return required instanceof Map<?, ?> requiredMap && Boolean.TRUE.equals(requiredMap.get("value"));
+    }
+
+    private Map<String, Object> normalizeValidations(Object validations) {
+        if (!(validations instanceof Map<?, ?> map) || map.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        return objectMapper.convertValue(map, new TypeReference<Map<String, Object>>() {});
     }
 
     private void applyReferenceLabels(List<RawDomainAttribute> attributes, String prefix) {

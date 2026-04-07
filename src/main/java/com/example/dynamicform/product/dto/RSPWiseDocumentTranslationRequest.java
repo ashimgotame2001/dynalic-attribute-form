@@ -29,24 +29,6 @@ public class RSPWiseDocumentTranslationRequest {
         private String referenceModel;
         private Map<String, String> shortLabelI18n;
         private Map<String, String> longLabelI18n;
-        private ValidationTranslation validations;
-    }
-
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @Builder
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class ValidationTranslation {
-        private RequiredValidationTranslation required;
-    }
-
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @Builder
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class RequiredValidationTranslation {
-        private Map<String, String> messageI18n;
+        private Object validations;
     }
 }

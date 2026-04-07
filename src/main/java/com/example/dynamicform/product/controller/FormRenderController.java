@@ -5,7 +5,7 @@ import com.example.dynamicform.platform.dto.FormDefinition;
 import com.example.dynamicform.product.dto.RSPAttributeContractResponse;
 import com.example.dynamicform.platform.dto.ValidationError;
 import com.example.dynamicform.platform.dto.metadata.RawFormMetadata;
-import com.example.dynamicform.platform.engine.DynamicFormEngine;
+import com.example.dynamicform.platform.core.DynamicFormEngine;
 import com.example.dynamicform.platform.exception.DynamicValidationException;
 import com.example.dynamicform.platform.exception.FormNotFoundException;
 import com.example.dynamicform.platform.service.ResponseLocalizationService;

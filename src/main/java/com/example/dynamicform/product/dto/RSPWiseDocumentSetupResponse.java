@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Data
@@ -17,10 +19,23 @@ public class RSPWiseDocumentSetupResponse {
     private String documentName;
     private Boolean isPrimary;
     private Long rspId;
+    private List<FieldSpec> fields;
     private boolean isDocumentNumberRequired;
     private boolean isBackRequired;
     private boolean isIssuedCountryRequired;
     private boolean isExpiryDateRequired;
     private boolean isPrimaryContentRequired;
     private boolean isSecondaryContentRequired;
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class FieldSpec {
+        private String referenceModel;
+        private Boolean visible;
+        private String shortLabel;
+        private String longLabel;
+        private Object validations;
+    }
 }

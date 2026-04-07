@@ -32,26 +32,6 @@ public class RSPWiseDocumentSetupRequest {
         private Map<String, String> shortLabelI18n;
         private String longLabel;
         private Map<String, String> longLabelI18n;
-        private ValidationDefinition validations;
-    }
-
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @Builder
-    @com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
-    public static class ValidationDefinition {
-        private RequiredValidation required;
-    }
-
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @Builder
-    @com.fasterxml.jackson.annotation.JsonIgnoreProperties(ignoreUnknown = true)
-    public static class RequiredValidation {
-        private Boolean value;
-        private String message;
-        private Map<String, String> messageI18n;
+        private Object validations;
     }
 }
