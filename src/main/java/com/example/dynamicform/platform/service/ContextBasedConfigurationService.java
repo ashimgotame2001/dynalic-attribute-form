@@ -1,6 +1,6 @@
 package com.example.dynamicform.platform.service;
 
-import com.example.dynamicform.platform.dto.metadata.RawFormMetadata;
+import com.example.dynamicform.platform.api.dto.metadata.RawFormMetadata;
 
 /**
  * Interface for context-based configuration of metadata.

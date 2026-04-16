@@ -8,15 +8,15 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class FormConfigTranslationRequest {
-
-    private String formName;
-    private Integer version;
+public class DocumentTranslationRequest {
+    private UUID setupId;
+    private UUID documentId;
     private List<FieldTranslation> fields;
 
     @Data
@@ -28,16 +28,6 @@ public class FormConfigTranslationRequest {
         private String referenceModel;
         private Map<Long, String> shortLabelI18n;
         private Map<Long, String> longLabelI18n;
-        private List<ValidationTranslation> validations;
-    }
-
-    @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @Builder
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class ValidationTranslation {
-        private String type;
-        private Map<Long, String> messageI18n;
+        private Object validations;
     }
 }

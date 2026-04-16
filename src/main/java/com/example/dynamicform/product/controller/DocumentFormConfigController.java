@@ -1,6 +1,6 @@
 package com.example.dynamicform.product.controller;
 
-import com.example.dynamicform.platform.dto.metadata.RawFormMetadata;
+import com.example.dynamicform.platform.api.dto.metadata.RawFormMetadata;
 import com.example.dynamicform.platform.service.ResponseLocalizationService;
 import com.example.dynamicform.product.service.DocumentFormConfigService;
 import lombok.RequiredArgsConstructor;
@@ -17,14 +17,11 @@ public class DocumentFormConfigController {
 
     @GetMapping
     public ResponseEntity<RawFormMetadata> getDocumentForm(
-            @RequestParam Long rspId,
             @RequestParam java.util.UUID documentId,
             @RequestParam(required = false, defaultValue = "customer") String service,
-            @RequestHeader(value = "Language", required = false) String languageHeader,
-            @RequestHeader(value = "Accept-Language", required = false) String acceptLanguageHeader) {
-        RawFormMetadata metadata = documentFormConfigService.generateDocumentFormMetadata(rspId, documentId, service);
+            @RequestHeader(value = "Language-Id", required = false) Long languageId) {
+        RawFormMetadata metadata = documentFormConfigService.generateDocumentFormMetadata( documentId, service);
         return ResponseEntity.ok(responseLocalizationService.prepareRawMetadataResponse(
-                metadata,
-                responseLocalizationService.resolveLanguage(languageHeader, acceptLanguageHeader)));
+                metadata, languageId));
     }
 }

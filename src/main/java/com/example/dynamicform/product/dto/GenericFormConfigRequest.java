@@ -1,6 +1,6 @@
 package com.example.dynamicform.product.dto;
 
-import com.example.dynamicform.platform.dto.FieldSpecRequest;
+import com.example.dynamicform.platform.api.dto.FieldSpecRequest;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;

@@ -1,6 +1,6 @@
 package com.example.dynamicform.platform.service;
 
-import com.example.dynamicform.platform.validation.ValidationRule;
+import com.example.dynamicform.platform.core.validation.rule.ValidationRule;
 import com.example.dynamicform.product.dto.ValidationRuleDTO;
 
 import java.util.List;

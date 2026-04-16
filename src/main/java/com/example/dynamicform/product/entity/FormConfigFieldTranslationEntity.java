@@ -20,7 +20,7 @@ import java.util.UUID;
 @Entity
 @Table(
         name = "form_configuration_field_translations",
-        uniqueConstraints = @UniqueConstraint(name = "uk_form_config_field_locale", columnNames = {"field_id", "locale"})
+        uniqueConstraints = @UniqueConstraint(name = "uk_form_config_field_language", columnNames = {"field_id", "language_id"})
 )
 public class FormConfigFieldTranslationEntity {
 
@@ -33,8 +33,8 @@ public class FormConfigFieldTranslationEntity {
     @JoinColumn(name = "field_id", nullable = false)
     private FormConfigFieldEntity field;
 
-    @Column(name = "locale", nullable = false, length = 32)
-    private String locale;
+    @Column(name = "language_id", nullable = false)
+    private Long languageId;
 
     @Column(name = "short_label", length = 1000)
     private String shortLabel;

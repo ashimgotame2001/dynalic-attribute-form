@@ -23,10 +23,6 @@
       "value": "1"
     },
     {
-      "key": "rspId",
-      "value": "101"
-    },
-    {
       "key": "relationshipName",
       "value": "kycIndividual_supportingDocuments"
     },
@@ -76,7 +72,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"formName\": \"{{formName}}\",\n  \"description\": \"Customer onboarding form\",\n  \"rspId\": {{rspId}},\n  \"fields\": [\n    {\n      \"referenceModel\": \"firstName\",\n      \"visible\": true,\n      \"shortLabel\": \"First Name\",\n      \"longLabel\": \"Customer First Name\",\n      \"validations\": {\n        \"required\": {\n          \"value\": true,\n          \"message\": \"First name is required\"\n        },\n        \"minLength\": {\n          \"value\": 2,\n          \"message\": \"Minimum 2 characters required\"\n        }\n      }\n    },\n    {\n      \"referenceModel\": \"lastName\",\n      \"visible\": true,\n      \"shortLabel\": \"Last Name\",\n      \"longLabel\": \"Customer Last Name\",\n      \"validations\": {\n        \"required\": {\n          \"value\": true,\n          \"message\": \"Last name is required\"\n        }\n      }\n    },\n    {\n      \"referenceModel\": \"address/city\",\n      \"visible\": true,\n      \"shortLabel\": \"City\",\n      \"longLabel\": \"City of Residence\",\n      \"validations\": {\n        \"required\": {\n          \"value\": true,\n          \"message\": \"City is required\"\n        }\n      }\n    }\n  ]\n}"
+              "raw": "{\n  \"formName\": \"{{formName}}\",\n  \"description\": \"Customer onboarding form\",\n  \"fields\": [\n    {\n      \"referenceModel\": \"firstName\",\n      \"visible\": true,\n      \"shortLabel\": \"First Name\",\n      \"longLabel\": \"Customer First Name\",\n      \"validations\": {\n        \"required\": {\n          \"value\": true,\n          \"message\": \"First name is required\"\n        },\n        \"minLength\": {\n          \"value\": 2,\n          \"message\": \"Minimum 2 characters required\"\n        }\n      }\n    },\n    {\n      \"referenceModel\": \"lastName\",\n      \"visible\": true,\n      \"shortLabel\": \"Last Name\",\n      \"longLabel\": \"Customer Last Name\",\n      \"validations\": {\n        \"required\": {\n          \"value\": true,\n          \"message\": \"Last name is required\"\n        }\n      }\n    },\n    {\n      \"referenceModel\": \"address/city\",\n      \"visible\": true,\n      \"shortLabel\": \"City\",\n      \"longLabel\": \"City of Residence\",\n      \"validations\": {\n        \"required\": {\n          \"value\": true,\n          \"message\": \"City is required\"\n        }\n      }\n    }\n  ]\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/config/forms/customer",
@@ -109,7 +105,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"formName\": \"beneficiary-registration\",\n  \"description\": \"Beneficiary setup form\",\n  \"rspId\": {{rspId}},\n  \"fields\": [\n    {\n      \"referenceModel\": \"fullName\",\n      \"visible\": true,\n      \"shortLabel\": \"Full Name\",\n      \"longLabel\": \"Beneficiary Full Name\",\n      \"validations\": {\n        \"required\": {\n          \"value\": true,\n          \"message\": \"Beneficiary name is required\"\n        }\n      }\n    },\n    {\n      \"referenceModel\": \"bankDetails/accountNumber\",\n      \"visible\": true,\n      \"shortLabel\": \"Account No\",\n      \"longLabel\": \"Bank Account Number\",\n      \"validations\": {\n        \"required\": {\n          \"value\": true,\n          \"message\": \"Account number is required\"\n        },\n        \"pattern\": {\n          \"pattern\": \"^[0-9]{8,20}$\",\n          \"message\": \"Account number format is invalid\"\n        }\n      }\n    }\n  ]\n}"
+              "raw": "{\n  \"formName\": \"beneficiary-registration\",\n  \"description\": \"Beneficiary setup form\",\n  \"fields\": [\n    {\n      \"referenceModel\": \"fullName\",\n      \"visible\": true,\n      \"shortLabel\": \"Full Name\",\n      \"longLabel\": \"Beneficiary Full Name\",\n      \"validations\": {\n        \"required\": {\n          \"value\": true,\n          \"message\": \"Beneficiary name is required\"\n        }\n      }\n    },\n    {\n      \"referenceModel\": \"bankDetails/accountNumber\",\n      \"visible\": true,\n      \"shortLabel\": \"Account No\",\n      \"longLabel\": \"Bank Account Number\",\n      \"validations\": {\n        \"required\": {\n          \"value\": true,\n          \"message\": \"Account number is required\"\n        },\n        \"pattern\": {\n          \"pattern\": \"^[0-9]{8,20}$\",\n          \"message\": \"Account number format is invalid\"\n        }\n      }\n    }\n  ]\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/config/forms/beneficiary",
@@ -141,7 +137,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"formName\": \"transaction-form\",\n  \"description\": \"Transaction setup form\",\n  \"rspId\": {{rspId}},\n  \"fields\": [\n    {\n      \"referenceModel\": \"amount\",\n      \"visible\": true,\n      \"shortLabel\": \"Amount\",\n      \"longLabel\": \"Transaction Amount\",\n      \"validations\": {\n        \"required\": {\n          \"value\": true,\n          \"message\": \"Amount is required\"\n        },\n        \"min\": {\n          \"value\": 1,\n          \"message\": \"Amount must be greater than zero\"\n        }\n      }\n    },\n    {\n      \"referenceModel\": \"purpose\",\n      \"visible\": true,\n      \"shortLabel\": \"Purpose\",\n      \"longLabel\": \"Transaction Purpose\",\n      \"validations\": {\n        \"required\": {\n          \"value\": true,\n          \"message\": \"Purpose is required\"\n        }\n      }\n    }\n  ]\n}"
+              "raw": "{\n  \"formName\": \"transaction-form\",\n  \"description\": \"Transaction setup form\",\n  \"fields\": [\n    {\n      \"referenceModel\": \"amount\",\n      \"visible\": true,\n      \"shortLabel\": \"Amount\",\n      \"longLabel\": \"Transaction Amount\",\n      \"validations\": {\n        \"required\": {\n          \"value\": true,\n          \"message\": \"Amount is required\"\n        },\n        \"min\": {\n          \"value\": 1,\n          \"message\": \"Amount must be greater than zero\"\n        }\n      }\n    },\n    {\n      \"referenceModel\": \"purpose\",\n      \"visible\": true,\n      \"shortLabel\": \"Purpose\",\n      \"longLabel\": \"Transaction Purpose\",\n      \"validations\": {\n        \"required\": {\n          \"value\": true,\n          \"message\": \"Purpose is required\"\n        }\n      }\n    }\n  ]\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/config/forms/transaction",
@@ -173,7 +169,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"formName\": \"{{kycFormName}}\",\n  \"description\": \"Customer KYC individual form\",\n  \"rspId\": {{rspId}},\n  \"targetClassName\": \"com.example.dynamicform.product.model.KycIndividual\",\n  \"moduleName\": \"Customer KYC\",\n  \"artifactName\": \"KycIndividualForm\",\n  \"includeAllFields\": true\n}"
+              "raw": "{\n  \"formName\": \"{{kycFormName}}\",\n  \"description\": \"Customer KYC individual form\",\n  \"targetClassName\": \"com.example.dynamicform.product.model.KycIndividual\",\n  \"moduleName\": \"Customer KYC\",\n  \"artifactName\": \"KycIndividualForm\",\n  \"includeAllFields\": true\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/config/forms/generic",
@@ -384,7 +380,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"rspId\": {{rspId}},\n  \"attributes\": {\n    \"firstName\": true,\n    \"lastName\": true,\n    \"address\": true\n  }\n}"
+              "raw": "{\n  \"attributes\": {\n    \"firstName\": true,\n    \"lastName\": true,\n    \"address\": true\n  }\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/forms/{{kycFormName}}/config",
@@ -527,7 +523,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"rspId\": {{rspId}},\n  \"documentId\": \"{{documentId}}\",\n  \"isPrimary\": true,\n  \"fields\": [\n    {\n      \"referenceModel\": \"document/documentNumber\",\n      \"visible\": true,\n      \"shortLabel\": \"Document Number\",\n      \"longLabel\": \"Supporting Document Number\",\n      \"validations\": {\n        \"required\": {\n          \"value\": true,\n          \"message\": \"Document number is required\"\n        },\n        \"minLength\": {\n          \"value\": 5,\n          \"message\": \"Document number must be at least 5 characters\"\n        },\n        \"maxLength\": {\n          \"value\": 20,\n          \"message\": \"Document number cannot exceed 20 characters\"\n        },\n        \"pattern\": {\n          \"pattern\": \"^[A-Z0-9-]+$\",\n          \"message\": \"Document number format is invalid\"\n        }\n      }\n    },\n    {\n      \"referenceModel\": \"document/issueCountry/alphaTwoCode\",\n      \"visible\": true,\n      \"shortLabel\": \"Issue Country\",\n      \"longLabel\": \"Document Issue Country\",\n      \"validations\": {\n        \"required\": {\n          \"value\": true,\n          \"message\": \"Issue country is required\"\n        }\n      }\n    },\n    {\n      \"referenceModel\": \"document/issueDate\",\n      \"visible\": true,\n      \"shortLabel\": \"Issue Date\",\n      \"longLabel\": \"Document Issue Date\",\n      \"validations\": {\n        \"allowPast\": {\n          \"value\": true,\n          \"message\": \"Issue date can be in the past\"\n        },\n        \"allowFuture\": {\n          \"value\": false,\n          \"message\": \"Issue date cannot be in the future\"\n        }\n      }\n    },\n    {\n      \"referenceModel\": \"document/expiryDate\",\n      \"visible\": true,\n      \"shortLabel\": \"Expiry Date\",\n      \"longLabel\": \"Document Expiry Date\",\n      \"validations\": {\n        \"required\": {\n          \"value\": false,\n          \"message\": \"Expiry date is required\"\n        },\n        \"allowPast\": {\n          \"value\": false,\n          \"message\": \"Expiry date cannot be in the past\"\n        },\n        \"allowFuture\": {\n          \"value\": true,\n          \"message\": \"Expiry date can be in the future\"\n        }\n      }\n    },\n    {\n      \"referenceModel\": \"document/primaryContent\",\n      \"visible\": true,\n      \"shortLabel\": \"Front Side\",\n      \"longLabel\": \"Primary Document Content\",\n      \"validations\": {\n        \"required\": {\n          \"value\": true,\n          \"message\": \"Primary content is required\"\n        }\n      }\n    },\n    {\n      \"referenceModel\": \"document/secondaryContent\",\n      \"visible\": false,\n      \"shortLabel\": \"Back Side\",\n      \"longLabel\": \"Secondary Document Content\",\n      \"validations\": {\n        \"required\": {\n          \"value\": false,\n          \"message\": \"Secondary content is required\"\n        }\n      }\n    }\n  ]\n}"
+              "raw": "{\n  \"documentId\": \"{{documentId}}\",\n  \"isPrimary\": true,\n  \"fields\": [\n    {\n      \"referenceModel\": \"document/documentNumber\",\n      \"visible\": true,\n      \"shortLabel\": \"Document Number\",\n      \"longLabel\": \"Supporting Document Number\",\n      \"validations\": {\n        \"required\": {\n          \"value\": true,\n          \"message\": \"Document number is required\"\n        },\n        \"minLength\": {\n          \"value\": 5,\n          \"message\": \"Document number must be at least 5 characters\"\n        },\n        \"maxLength\": {\n          \"value\": 20,\n          \"message\": \"Document number cannot exceed 20 characters\"\n        },\n        \"pattern\": {\n          \"pattern\": \"^[A-Z0-9-]+$\",\n          \"message\": \"Document number format is invalid\"\n        }\n      }\n    },\n    {\n      \"referenceModel\": \"document/issueCountry/alphaTwoCode\",\n      \"visible\": true,\n      \"shortLabel\": \"Issue Country\",\n      \"longLabel\": \"Document Issue Country\",\n      \"validations\": {\n        \"required\": {\n          \"value\": true,\n          \"message\": \"Issue country is required\"\n        }\n      }\n    },\n    {\n      \"referenceModel\": \"document/issueDate\",\n      \"visible\": true,\n      \"shortLabel\": \"Issue Date\",\n      \"longLabel\": \"Document Issue Date\",\n      \"validations\": {\n        \"allowPast\": {\n          \"value\": true,\n          \"message\": \"Issue date can be in the past\"\n        },\n        \"allowFuture\": {\n          \"value\": false,\n          \"message\": \"Issue date cannot be in the future\"\n        }\n      }\n    },\n    {\n      \"referenceModel\": \"document/expiryDate\",\n      \"visible\": true,\n      \"shortLabel\": \"Expiry Date\",\n      \"longLabel\": \"Document Expiry Date\",\n      \"validations\": {\n        \"required\": {\n          \"value\": false,\n          \"message\": \"Expiry date is required\"\n        },\n        \"allowPast\": {\n          \"value\": false,\n          \"message\": \"Expiry date cannot be in the past\"\n        },\n        \"allowFuture\": {\n          \"value\": true,\n          \"message\": \"Expiry date can be in the future\"\n        }\n      }\n    },\n    {\n      \"referenceModel\": \"document/primaryContent\",\n      \"visible\": true,\n      \"shortLabel\": \"Front Side\",\n      \"longLabel\": \"Primary Document Content\",\n      \"validations\": {\n        \"required\": {\n          \"value\": true,\n          \"message\": \"Primary content is required\"\n        }\n      }\n    },\n    {\n      \"referenceModel\": \"document/secondaryContent\",\n      \"visible\": false,\n      \"shortLabel\": \"Back Side\",\n      \"longLabel\": \"Secondary Document Content\",\n      \"validations\": {\n        \"required\": {\n          \"value\": false,\n          \"message\": \"Secondary content is required\"\n        }\n      }\n    }\n  ]\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/rsp-wise-documents",
@@ -554,7 +550,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"rspId\": {{rspId}},\n  \"documentId\": \"{{documentId}}\",\n  \"isPrimary\": true,\n  \"fields\": [\n    {\n      \"referenceModel\": \"document/documentNumber\",\n      \"visible\": true,\n      \"shortLabel\": \"Doc Number\",\n      \"longLabel\": \"Updated Document Number\",\n      \"validations\": {\n        \"required\": {\n          \"value\": true,\n          \"message\": \"Document number is mandatory\"\n        },\n        \"minLength\": {\n          \"value\": 8,\n          \"message\": \"Document number must be at least 8 characters\"\n        },\n        \"pattern\": {\n          \"pattern\": \"^[A-Z0-9]+$\",\n          \"message\": \"Only uppercase letters and digits are allowed\"\n        }\n      }\n    },\n    {\n      \"referenceModel\": \"document/expiryDate\",\n      \"visible\": true,\n      \"shortLabel\": \"Expiry Date\",\n      \"longLabel\": \"Document Expiry Date\",\n      \"validations\": {\n        \"allowPast\": {\n          \"value\": false,\n          \"message\": \"Expiry date cannot be in the past\"\n        },\n        \"allowFuture\": {\n          \"value\": true,\n          \"message\": \"Expiry date can be in the future\"\n        }\n      }\n    },\n    {\n      \"referenceModel\": \"document/secondaryContent\",\n      \"visible\": true,\n      \"shortLabel\": \"Back Side\",\n      \"longLabel\": \"Back Document Upload\",\n      \"validations\": {\n        \"required\": {\n          \"value\": true,\n          \"message\": \"Back side upload is mandatory\"\n        }\n      }\n    }\n  ]\n}"
+              "raw": "{\n  \"documentId\": \"{{documentId}}\",\n  \"isPrimary\": true,\n  \"fields\": [\n    {\n      \"referenceModel\": \"document/documentNumber\",\n      \"visible\": true,\n      \"shortLabel\": \"Doc Number\",\n      \"longLabel\": \"Updated Document Number\",\n      \"validations\": {\n        \"required\": {\n          \"value\": true,\n          \"message\": \"Document number is mandatory\"\n        },\n        \"minLength\": {\n          \"value\": 8,\n          \"message\": \"Document number must be at least 8 characters\"\n        },\n        \"pattern\": {\n          \"pattern\": \"^[A-Z0-9]+$\",\n          \"message\": \"Only uppercase letters and digits are allowed\"\n        }\n      }\n    },\n    {\n      \"referenceModel\": \"document/expiryDate\",\n      \"visible\": true,\n      \"shortLabel\": \"Expiry Date\",\n      \"longLabel\": \"Document Expiry Date\",\n      \"validations\": {\n        \"allowPast\": {\n          \"value\": false,\n          \"message\": \"Expiry date cannot be in the past\"\n        },\n        \"allowFuture\": {\n          \"value\": true,\n          \"message\": \"Expiry date can be in the future\"\n        }\n      }\n    },\n    {\n      \"referenceModel\": \"document/secondaryContent\",\n      \"visible\": true,\n      \"shortLabel\": \"Back Side\",\n      \"longLabel\": \"Back Document Upload\",\n      \"validations\": {\n        \"required\": {\n          \"value\": true,\n          \"message\": \"Back side upload is mandatory\"\n        }\n      }\n    }\n  ]\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/rsp-wise-documents/{{rspDocumentSetupId}}",
@@ -641,7 +637,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"rspId\": {{rspId}},\n  \"fieldType\": \"CUSTOMER\",\n  \"referenceModels\": [\n    \"firstName\",\n    \"lastName\",\n    \"address.city\",\n    \"document\"\n  ],\n  \"minPrimaryDocuments\": 1,\n  \"minSecondaryDocuments\": 0\n}"
+              "raw": "{\n  \"fieldType\": \"CUSTOMER\",\n  \"referenceModels\": [\n    \"firstName\",\n    \"lastName\",\n    \"address.city\",\n    \"document\"\n  ],\n  \"minPrimaryDocuments\": 1,\n  \"minSecondaryDocuments\": 0\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/rsp-attributes",
@@ -673,11 +669,11 @@
           }
         },
         {
-          "name": "List RSP Attribute Contracts By RspId And Module",
+          "name": "List Attribute Contracts By Module",
           "request": {
             "method": "GET",
             "url": {
-              "raw": "{{baseUrl}}/api/rsp-attributes?rspId={{rspId}}&module=customer",
+              "raw": "{{baseUrl}}/api/rsp-attributes?module=customer",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -686,10 +682,6 @@
                 "rsp-attributes"
               ],
               "query": [
-                {
-                  "key": "rspId",
-                  "value": "{{rspId}}"
-                },
                 {
                   "key": "module",
                   "value": "customer"
@@ -727,7 +719,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"id\": \"{{rspAttributeId}}\",\n  \"rspId\": {{rspId}},\n  \"referenceModel\": \"address.city\"\n}"
+              "raw": "{\n  \"id\": \"{{rspAttributeId}}\",\n  \"referenceModel\": \"address.city\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/rsp-attributes/{{rspAttributeId}}",
@@ -777,7 +769,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"setupId\": \"{{rspDocumentSetupId}}\",\n  \"rspId\": {{rspId}},\n  \"documentId\": \"{{documentId}}\",\n  \"fields\": [\n    {\n      \"referenceModel\": \"document/documentNumber\",\n      \"shortLabelI18n\": {\n        \"en\": \"Document Number\",\n        \"ne\": \"कागजात नम्बर\"\n      },\n      \"longLabelI18n\": {\n        \"en\": \"Supporting Document Number\",\n        \"ne\": \"समर्थन कागजात नम्बर\"\n      },\n      \"validations\": {\n        \"required\": {\n          \"messageI18n\": {\n            \"en\": \"Document number is required\",\n            \"ne\": \"कागजात नम्बर आवश्यक छ\"\n          }\n        },\n        \"minLength\": {\n          \"messageI18n\": {\n            \"en\": \"Document number must be at least 5 characters\",\n            \"ne\": \"कागजात नम्बर कम्तिमा ५ अक्षरको हुनुपर्छ\"\n          }\n        },\n        \"pattern\": {\n          \"messageI18n\": {\n            \"en\": \"Document number format is invalid\",\n            \"ne\": \"कागजात नम्बरको ढाँचा मिलेन\"\n          }\n        }\n      }\n    },\n    {\n      \"referenceModel\": \"document/expiryDate\",\n      \"shortLabelI18n\": {\n        \"en\": \"Expiry Date\",\n        \"ne\": \"समाप्ति मिति\"\n      },\n      \"longLabelI18n\": {\n        \"en\": \"Document Expiry Date\",\n        \"ne\": \"कागजात समाप्ति मिति\"\n      },\n      \"validations\": {\n        \"allowPast\": {\n          \"messageI18n\": {\n            \"en\": \"Expiry date cannot be in the past\",\n            \"ne\": \"समाप्ति मिति विगतको हुन मिल्दैन\"\n          }\n        },\n        \"allowFuture\": {\n          \"messageI18n\": {\n            \"en\": \"Expiry date can be in the future\",\n            \"ne\": \"समाप्ति मिति भविष्यमा हुन सक्छ\"\n          }\n        }\n      }\n    }\n  ]\n}"
+              "raw": "{\n  \"setupId\": \"{{rspDocumentSetupId}}\",\n  \"documentId\": \"{{documentId}}\",\n  \"fields\": [\n    {\n      \"referenceModel\": \"document/documentNumber\",\n      \"shortLabelI18n\": {\n        \"en\": \"Document Number\",\n        \"ne\": \"कागजात नम्बर\"\n      },\n      \"longLabelI18n\": {\n        \"en\": \"Supporting Document Number\",\n        \"ne\": \"समर्थन कागजात नम्बर\"\n      },\n      \"validations\": {\n        \"required\": {\n          \"messageI18n\": {\n            \"en\": \"Document number is required\",\n            \"ne\": \"कागजात नम्बर आवश्यक छ\"\n          }\n        },\n        \"minLength\": {\n          \"messageI18n\": {\n            \"en\": \"Document number must be at least 5 characters\",\n            \"ne\": \"कागजात नम्बर कम्तिमा ५ अक्षरको हुनुपर्छ\"\n          }\n        },\n        \"pattern\": {\n          \"messageI18n\": {\n            \"en\": \"Document number format is invalid\",\n            \"ne\": \"कागजात नम्बरको ढाँचा मिलेन\"\n          }\n        }\n      }\n    },\n    {\n      \"referenceModel\": \"document/expiryDate\",\n      \"shortLabelI18n\": {\n        \"en\": \"Expiry Date\",\n        \"ne\": \"समाप्ति मिति\"\n      },\n      \"longLabelI18n\": {\n        \"en\": \"Document Expiry Date\",\n        \"ne\": \"कागजात समाप्ति मिति\"\n      },\n      \"validations\": {\n        \"allowPast\": {\n          \"messageI18n\": {\n            \"en\": \"Expiry date cannot be in the past\",\n            \"ne\": \"समाप्ति मिति विगतको हुन मिल्दैन\"\n          }\n        },\n        \"allowFuture\": {\n          \"messageI18n\": {\n            \"en\": \"Expiry date can be in the future\",\n            \"ne\": \"समाप्ति मिति भविष्यमा हुन सक्छ\"\n          }\n        }\n      }\n    }\n  ]\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/rsp-wise-documents/translations",
@@ -805,7 +797,7 @@
           "request": {
             "method": "GET",
             "url": {
-              "raw": "{{baseUrl}}/api/v1/document-forms?rspId={{rspId}}&documentId={{documentId}}&service=customer",
+              "raw": "{{baseUrl}}/api/v1/document-forms?documentId={{documentId}}&service=customer",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -815,10 +807,6 @@
                 "document-forms"
               ],
               "query": [
-                {
-                  "key": "rspId",
-                  "value": "{{rspId}}"
-                },
                 {
                   "key": "documentId",
                   "value": "{{documentId}}"
@@ -846,7 +834,7 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/api/v1/document-forms?rspId={{rspId}}&documentId={{documentId}}&service=customer",
+              "raw": "{{baseUrl}}/api/v1/document-forms?documentId={{documentId}}&service=customer",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -856,10 +844,6 @@
                 "document-forms"
               ],
               "query": [
-                {
-                  "key": "rspId",
-                  "value": "{{rspId}}"
-                },
                 {
                   "key": "documentId",
                   "value": "{{documentId}}"

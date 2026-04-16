@@ -1,7 +1,7 @@
 package com.example.dynamicform.product.service;
 
-import com.example.dynamicform.platform.dto.ValidationError;
-import com.example.dynamicform.platform.dto.metadata.RawFormMetadata;
+import com.example.dynamicform.platform.api.dto.ValidationError;
+import com.example.dynamicform.platform.api.dto.metadata.RawFormMetadata;
 
 import java.util.List;
 import java.util.Map;

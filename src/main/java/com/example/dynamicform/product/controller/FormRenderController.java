@@ -1,16 +1,16 @@
 package com.example.dynamicform.product.controller;
 
 import com.example.dynamicform.product.dto.DynamicFormConfigRequest;
-import com.example.dynamicform.platform.dto.FormDefinition;
-import com.example.dynamicform.product.dto.RSPAttributeContractResponse;
-import com.example.dynamicform.platform.dto.ValidationError;
-import com.example.dynamicform.platform.dto.metadata.RawFormMetadata;
-import com.example.dynamicform.platform.core.DynamicFormEngine;
-import com.example.dynamicform.platform.exception.DynamicValidationException;
-import com.example.dynamicform.platform.exception.FormNotFoundException;
+import com.example.dynamicform.platform.api.dto.AttributeContractResponse;
+import com.example.dynamicform.platform.api.dto.FormDefinition;
+import com.example.dynamicform.platform.api.dto.ValidationError;
+import com.example.dynamicform.platform.api.dto.metadata.RawFormMetadata;
+import com.example.dynamicform.platform.core.engine.DynamicFormEngine;
+import com.example.dynamicform.platform.api.exception.DynamicValidationException;
+import com.example.dynamicform.platform.api.exception.FormNotFoundException;
+import com.example.dynamicform.platform.service.AttributeContractAccessService;
 import com.example.dynamicform.platform.service.ResponseLocalizationService;
 import com.example.dynamicform.platform.service.RawMetadataCustomizationService;
-import com.example.dynamicform.product.service.RSPAttributeContractService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,7 +18,6 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * Controller for frontend form rendering and submission.
@@ -29,7 +28,7 @@ import java.util.stream.Collectors;
 public class FormRenderController {
 
     private final DynamicFormEngine dynamicFormEngine;
-    private final RSPAttributeContractService rspAttributeContractService;
+    private final AttributeContractAccessService attributeContractService;
     private final RawMetadataCustomizationService rawMetadataCustomizationService;
     private final ResponseLocalizationService responseLocalizationService;
 
@@ -38,12 +37,10 @@ public class FormRenderController {
      */
     @GetMapping("/{formName}")
     public ResponseEntity<FormDefinition> getForm(@PathVariable String formName,
-                                                  @RequestHeader(value = "Language", required = false) String languageHeader,
-                                                  @RequestHeader(value = "Accept-Language", required = false) String acceptLanguageHeader) {
+                                                  @RequestHeader(value = "Language-Id", required = false) Long languageId) {
         FormDefinition formDefinition = dynamicFormEngine.getFormDefinition(formName);
         return ResponseEntity.ok(responseLocalizationService.prepareFormDefinitionResponse(
-                formDefinition,
-                responseLocalizationService.resolveLanguage(languageHeader, acceptLanguageHeader)));
+                formDefinition, languageId));
     }
 
     /**
@@ -52,19 +49,17 @@ public class FormRenderController {
     @PostMapping("/{formName}/config")
     public ResponseEntity<RawFormMetadata> getCustomForm(@PathVariable String formName,
                                                          @RequestBody DynamicFormConfigRequest request,
-                                                         @RequestHeader(value = "Language", required = false) String languageHeader,
-                                                         @RequestHeader(value = "Accept-Language", required = false) String acceptLanguageHeader) {
+                                                         @RequestHeader(value = "Language-Id", required = false) Long languageId) {
         FormDefinition baseForm = dynamicFormEngine.getFormDefinition(formName);
         RawFormMetadata baseRaw = baseForm.getRawMetadata();
         // Default to "customer" module for existing calls
-        List<RSPAttributeContractResponse> enabledAttributes = rspAttributeContractService.findByRspId(request.getRspId(), "customer");
+        List<AttributeContractResponse> enabledAttributes = attributeContractService.findByModule( "customer");
         Set<String> enabledReferenceModels = enabledAttributes.stream()
-                .map(RSPAttributeContractResponse::getReferenceModel)
+                .map(AttributeContractResponse::getReferenceModel)
                 .collect(java.util.stream.Collectors.toSet());
         RawFormMetadata customized = rawMetadataCustomizationService.customize(baseRaw, enabledReferenceModels, request.getAttributes());
         return ResponseEntity.ok(responseLocalizationService.prepareRawMetadataResponse(
-                customized,
-                responseLocalizationService.resolveLanguage(languageHeader, acceptLanguageHeader)));
+                customized, languageId));
     }
 
     /**

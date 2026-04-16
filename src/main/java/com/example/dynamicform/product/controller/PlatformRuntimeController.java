@@ -1,7 +1,7 @@
 package com.example.dynamicform.product.controller;
 
-import com.example.dynamicform.platform.dto.PlatformEntityResponse;
-import com.example.dynamicform.platform.dto.PlatformRuntimeContractResponse;
+import com.example.dynamicform.platform.api.dto.PlatformEntityResponse;
+import com.example.dynamicform.platform.api.dto.PlatformRuntimeContractResponse;
 import com.example.dynamicform.platform.service.PlatformRuntimeService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

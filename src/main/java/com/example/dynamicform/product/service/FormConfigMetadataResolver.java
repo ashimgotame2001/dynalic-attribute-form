@@ -1,8 +1,8 @@
 package com.example.dynamicform.product.service;
 
-import com.example.dynamicform.platform.dto.FieldSpecRequest;
-import com.example.dynamicform.platform.dto.metadata.RawDomainAttribute;
-import com.example.dynamicform.platform.dto.metadata.RawFormMetadata;
+import com.example.dynamicform.platform.api.dto.FieldSpecRequest;
+import com.example.dynamicform.platform.api.dto.metadata.RawDomainAttribute;
+import com.example.dynamicform.platform.api.dto.metadata.RawFormMetadata;
 import com.example.dynamicform.product.entity.CustomerFormConfigurationEntity;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Component;

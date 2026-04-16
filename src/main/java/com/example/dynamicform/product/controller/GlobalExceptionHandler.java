@@ -1,8 +1,8 @@
 package com.example.dynamicform.product.controller;
 
-import com.example.dynamicform.platform.dto.ValidationError;
-import com.example.dynamicform.platform.exception.DynamicValidationException;
-import com.example.dynamicform.platform.exception.FormNotFoundException;
+import com.example.dynamicform.platform.api.dto.ValidationError;
+import com.example.dynamicform.platform.api.exception.DynamicValidationException;
+import com.example.dynamicform.platform.api.exception.FormNotFoundException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

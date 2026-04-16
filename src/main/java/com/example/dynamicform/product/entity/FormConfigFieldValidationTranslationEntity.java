@@ -1,11 +1,7 @@
 package com.example.dynamicform.product.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -20,7 +16,7 @@ import java.util.UUID;
 @Entity
 @Table(
         name = "form_configuration_field_validation_translations",
-        uniqueConstraints = @UniqueConstraint(name = "uk_form_config_validation_locale", columnNames = {"validation_id", "locale"})
+        uniqueConstraints = @UniqueConstraint(name = "uk_form_config_validation_language", columnNames = {"validation_id", "language_id"})
 )
 public class FormConfigFieldValidationTranslationEntity {
 
@@ -33,8 +29,8 @@ public class FormConfigFieldValidationTranslationEntity {
     @JoinColumn(name = "validation_id", nullable = false)
     private FormConfigFieldValidationEntity validation;
 
-    @Column(name = "locale", nullable = false, length = 32)
-    private String locale;
+    @Column(name = "language_id", nullable = false)
+    private Long languageId;
 
     @Column(name = "message", length = 2000)
     private String message;

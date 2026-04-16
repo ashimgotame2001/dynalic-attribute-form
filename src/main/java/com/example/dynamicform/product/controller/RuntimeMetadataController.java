@@ -1,6 +1,6 @@
 package com.example.dynamicform.product.controller;
 
-import com.example.dynamicform.platform.dto.metadata.RawFormMetadata;
+import com.example.dynamicform.platform.api.dto.metadata.RawFormMetadata;
 import com.example.dynamicform.platform.service.DynamicRelationshipFormService;
 import com.example.dynamicform.product.model.KycRegisterRequest;
 import org.springframework.http.ResponseEntity;

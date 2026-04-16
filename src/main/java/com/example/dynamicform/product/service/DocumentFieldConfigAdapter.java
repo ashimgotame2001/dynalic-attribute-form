@@ -1,11 +1,11 @@
 package com.example.dynamicform.product.service;
 
-import com.example.dynamicform.platform.api.dto.FieldSpecRequest;
-import com.example.dynamicform.product.entity.CustomerFormConfigurationEntity;
-import com.example.dynamicform.product.entity.FormConfigFieldEntity;
-import com.example.dynamicform.product.entity.FormConfigFieldTranslationEntity;
-import com.example.dynamicform.product.entity.FormConfigFieldValidationEntity;
-import com.example.dynamicform.product.entity.FormConfigFieldValidationTranslationEntity;
+import com.example.dynamicform.product.dto.DocumentSetupRequest;
+import com.example.dynamicform.product.entity.DocumentFieldConfigEntity;
+import com.example.dynamicform.product.entity.DocumentFieldTranslationEntity;
+import com.example.dynamicform.product.entity.DocumentFieldValidationEntity;
+import com.example.dynamicform.product.entity.DocumentFieldValidationTranslationEntity;
+import com.example.dynamicform.product.entity.DocumentSetupEntity;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -21,26 +22,28 @@ import java.util.Map;
 import java.util.TreeSet;
 
 @Component
-public class FormConfigFieldAdapter {
+public class DocumentFieldConfigAdapter {
 
+    private static final String DEFAULT_REQUIRED_MESSAGE = "Field is required";
     private final ObjectMapper objectMapper;
 
-    public FormConfigFieldAdapter(ObjectMapper objectMapper) {
+    public DocumentFieldConfigAdapter(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
     }
 
-    public List<FormConfigFieldEntity> toEntities(CustomerFormConfigurationEntity formConfiguration,
-                                                  List<FieldSpecRequest.FieldSpec> fields) {
-        List<FieldSpecRequest.FieldSpec> requestFields = fields == null ? Collections.emptyList() : fields;
-        List<FormConfigFieldEntity> entities = new ArrayList<>(requestFields.size());
-        for (int index = 0; index < requestFields.size(); index++) {
-            FieldSpecRequest.FieldSpec requestField = requestFields.get(index);
+    public List<DocumentFieldConfigEntity> toEntities(DocumentSetupEntity setup,
+                                                      List<DocumentSetupRequest.FieldSpec> requestFields) {
+        List<DocumentSetupRequest.FieldSpec> fields = requestFields == null ? Collections.emptyList() : requestFields;
+        List<DocumentFieldConfigEntity> entities = new ArrayList<>(fields.size());
+        for (int index = 0; index < fields.size(); index++) {
+            DocumentSetupRequest.FieldSpec requestField = fields.get(index);
             if (requestField == null || requestField.getReferenceModel() == null || requestField.getReferenceModel().isBlank()) {
                 continue;
             }
-            FormConfigFieldEntity entity = FormConfigFieldEntity.builder()
-                    .formConfiguration(formConfiguration)
-                    .referenceModel(requestField.getReferenceModel())
+
+            DocumentFieldConfigEntity fieldEntity = DocumentFieldConfigEntity.builder()
+                    .setup(setup)
+                    .referenceModel(DocumentReferenceModels.normalize(requestField.getReferenceModel()))
                     .displayOrder(index)
                     .visible(requestField.getVisible())
                     .shortLabel(requestField.getShortLabel())
@@ -49,25 +52,75 @@ public class FormConfigFieldAdapter {
                     .validations(new LinkedHashSet<>())
                     .build();
 
-            entity.getTranslations().addAll(toFieldTranslations(entity, requestField.getShortLabelI18n(), requestField.getLongLabelI18n()));
-            entity.getValidations().addAll(toValidationEntities(entity, requestField.getValidations()));
-            entities.add(entity);
+            fieldEntity.getTranslations().addAll(toFieldTranslations(
+                    fieldEntity,
+                    requestField.getShortLabelI18n(),
+                    requestField.getLongLabelI18n()));
+            fieldEntity.getValidations().addAll(toValidationEntities(fieldEntity, requestField.getValidations()));
+            entities.add(fieldEntity);
         }
         return entities;
     }
 
-    public List<FieldSpecRequest.FieldSpec> toFieldSpecs(CustomerFormConfigurationEntity entity) {
-        if (entity.getFieldConfigs() == null || entity.getFieldConfigs().isEmpty()) {
-            return Collections.emptyList();
+    public List<DocumentSetupRequest.FieldSpec> toFieldSpecs(DocumentSetupEntity setup) {
+        if (setup.getFieldConfigs() != null && !setup.getFieldConfigs().isEmpty()) {
+            return setup.getFieldConfigs().stream()
+                    .sorted(Comparator.comparing(config -> config.getDisplayOrder() != null ? config.getDisplayOrder() : Integer.MAX_VALUE))
+                    .map(this::toFieldSpec)
+                    .toList();
         }
-        return entity.getFieldConfigs().stream()
-                .map(this::toFieldSpec)
-                .toList();
+
+        List<DocumentSetupRequest.FieldSpec> legacyFields = readLegacyMetadata(setup.getMetadataJson());
+        if (!legacyFields.isEmpty()) {
+            return legacyFields;
+        }
+
+        return buildLegacyFallbackFields(setup);
     }
 
-    private FieldSpecRequest.FieldSpec toFieldSpec(FormConfigFieldEntity entity) {
-        return FieldSpecRequest.FieldSpec.builder()
-                .referenceModel(entity.getReferenceModel())
+    public Map<String, DocumentSetupRequest.FieldSpec> toFieldMap(DocumentSetupEntity setup) {
+        List<DocumentSetupRequest.FieldSpec> fieldSpecs = toFieldSpecs(setup);
+        if (fieldSpecs.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        Map<String, DocumentSetupRequest.FieldSpec> fieldMap = new LinkedHashMap<>();
+        for (DocumentSetupRequest.FieldSpec field : fieldSpecs) {
+            if (field != null && field.getReferenceModel() != null) {
+                fieldMap.put(DocumentReferenceModels.normalize(field.getReferenceModel()), field);
+            }
+        }
+        return fieldMap;
+    }
+
+    private List<DocumentFieldValidationEntity> toValidationEntities(DocumentFieldConfigEntity fieldEntity,
+                                                                     Object validations) {
+        List<Map<String, Object>> normalized = normalizeValidations(validations);
+        List<DocumentFieldValidationEntity> entities = new ArrayList<>();
+        int index = 0;
+        for (Map<String, Object> validation : normalized) {
+            for (Map.Entry<String, Object> entry : validation.entrySet()) {
+                Map<String, Object> params = entry.getValue() instanceof Map<?, ?> map
+                        ? castMap(map)
+                        : Collections.emptyMap();
+                DocumentFieldValidationEntity validationEntity = DocumentFieldValidationEntity.builder()
+                        .fieldConfig(fieldEntity)
+                        .displayOrder(index++)
+                        .validationType(entry.getKey())
+                        .valueJson(writeJson(params.get("value")))
+                        .pattern(params.get("pattern") != null ? params.get("pattern").toString() : null)
+                        .message(params.get("message") != null ? params.get("message").toString() : null)
+                        .translations(new LinkedHashSet<>())
+                        .build();
+                validationEntity.getTranslations().addAll(toValidationTranslations(validationEntity, params.get("messageI18n")));
+                entities.add(validationEntity);
+            }
+        }
+        return entities;
+    }
+
+    private DocumentSetupRequest.FieldSpec toFieldSpec(DocumentFieldConfigEntity entity) {
+        return DocumentSetupRequest.FieldSpec.builder()
+                .referenceModel(DocumentReferenceModels.normalize(entity.getReferenceModel()))
                 .visible(entity.getVisible())
                 .shortLabel(entity.getShortLabel())
                 .shortLabelI18n(toFieldShortLabelI18n(entity.getTranslations()))
@@ -77,38 +130,13 @@ public class FormConfigFieldAdapter {
                 .build();
     }
 
-    private List<FormConfigFieldValidationEntity> toValidationEntities(FormConfigFieldEntity field, Object validations) {
-        List<Map<String, Object>> normalized = normalizeValidations(validations);
-        List<FormConfigFieldValidationEntity> entities = new ArrayList<>();
-        int index = 0;
-        for (Map<String, Object> validation : normalized) {
-            for (Map.Entry<String, Object> entry : validation.entrySet()) {
-                Map<String, Object> params = entry.getValue() instanceof Map<?, ?> map
-                        ? castMap((Map<?, ?>) map)
-                        : Collections.emptyMap();
-                FormConfigFieldValidationEntity validationEntity = FormConfigFieldValidationEntity.builder()
-                        .field(field)
-                        .displayOrder(index++)
-                        .validationType(entry.getKey())
-                        .valueJson(writeJson(params.get("value")))
-                        .pattern(params.get("pattern") != null ? params.get("pattern").toString() : null)
-                        .message(params.get("message") != null ? params.get("message").toString() : null)
-                        .translations(new LinkedHashSet<>())
-                        .build();
-                validationEntity.getTranslations().addAll(toValidationTranslations(params.get("messageI18n"), validationEntity));
-                entities.add(validationEntity);
-            }
-        }
-        return entities;
-    }
-
-    private Object toValidationPayload(Collection<FormConfigFieldValidationEntity> validations) {
+    private Object toValidationPayload(Collection<DocumentFieldValidationEntity> validations) {
         if (validations == null || validations.isEmpty()) {
-            return Collections.emptyList();
+            return Collections.emptyMap();
         }
         Map<String, Object> payload = new LinkedHashMap<>();
         validations.stream()
-                .sorted(java.util.Comparator.comparing(v -> v.getDisplayOrder() != null ? v.getDisplayOrder() : Integer.MAX_VALUE))
+                .sorted(Comparator.comparing(v -> v.getDisplayOrder() != null ? v.getDisplayOrder() : Integer.MAX_VALUE))
                 .forEach(validation -> {
                     Map<String, Object> params = new LinkedHashMap<>();
                     Object value = readJson(validation.getValueJson());
@@ -130,9 +158,9 @@ public class FormConfigFieldAdapter {
         return payload;
     }
 
-    private List<FormConfigFieldTranslationEntity> toFieldTranslations(FormConfigFieldEntity field,
-                                                                       Map<Long, String> shortLabelI18n,
-                                                                       Map<Long, String> longLabelI18n) {
+    private List<DocumentFieldTranslationEntity> toFieldTranslations(DocumentFieldConfigEntity fieldEntity,
+                                                                     Map<Long, String> shortLabelI18n,
+                                                                     Map<Long, String> longLabelI18n) {
         TreeSet<Long> languageIds = new TreeSet<>();
         if (shortLabelI18n != null) {
             languageIds.addAll(shortLabelI18n.keySet());
@@ -141,13 +169,13 @@ public class FormConfigFieldAdapter {
             languageIds.addAll(longLabelI18n.keySet());
         }
 
-        List<FormConfigFieldTranslationEntity> translations = new ArrayList<>(languageIds.size());
+        List<DocumentFieldTranslationEntity> translations = new ArrayList<>(languageIds.size());
         for (Long languageId : languageIds) {
             if (languageId == null) {
                 continue;
             }
-            translations.add(FormConfigFieldTranslationEntity.builder()
-                    .field(field)
+            translations.add(DocumentFieldTranslationEntity.builder()
+                    .fieldConfig(fieldEntity)
                     .languageId(languageId)
                     .shortLabel(shortLabelI18n != null ? shortLabelI18n.get(languageId) : null)
                     .longLabel(longLabelI18n != null ? longLabelI18n.get(languageId) : null)
@@ -156,18 +184,20 @@ public class FormConfigFieldAdapter {
         return translations;
     }
 
-    private List<FormConfigFieldValidationTranslationEntity> toValidationTranslations(Object messageI18n, FormConfigFieldValidationEntity validation) {
+    private List<DocumentFieldValidationTranslationEntity> toValidationTranslations(
+            DocumentFieldValidationEntity validationEntity,
+            Object messageI18n) {
         if (!(messageI18n instanceof Map<?, ?> map) || map.isEmpty()) {
             return new ArrayList<>();
         }
         Map<Long, String> values = objectMapper.convertValue(map, new TypeReference<Map<Long, String>>() {});
-        List<FormConfigFieldValidationTranslationEntity> translations = new ArrayList<>(values.size());
+        List<DocumentFieldValidationTranslationEntity> translations = new ArrayList<>(values.size());
         for (Map.Entry<Long, String> entry : values.entrySet()) {
             if (entry.getKey() == null) {
                 continue;
             }
-            translations.add(FormConfigFieldValidationTranslationEntity.builder()
-                    .validation(validation)
+            translations.add(DocumentFieldValidationTranslationEntity.builder()
+                    .validation(validationEntity)
                     .languageId(entry.getKey())
                     .message(entry.getValue())
                     .build());
@@ -175,12 +205,12 @@ public class FormConfigFieldAdapter {
         return translations;
     }
 
-    private Map<Long, String> toFieldShortLabelI18n(Collection<FormConfigFieldTranslationEntity> translations) {
+    private Map<Long, String> toFieldShortLabelI18n(Collection<DocumentFieldTranslationEntity> translations) {
         Map<Long, String> labels = new LinkedHashMap<>();
         if (translations == null) {
             return labels;
         }
-        for (FormConfigFieldTranslationEntity translation : translations) {
+        for (DocumentFieldTranslationEntity translation : translations) {
             if (translation.getLanguageId() != null && translation.getShortLabel() != null) {
                 labels.put(translation.getLanguageId(), translation.getShortLabel());
             }
@@ -188,12 +218,12 @@ public class FormConfigFieldAdapter {
         return labels;
     }
 
-    private Map<Long, String> toFieldLongLabelI18n(Collection<FormConfigFieldTranslationEntity> translations) {
+    private Map<Long, String> toFieldLongLabelI18n(Collection<DocumentFieldTranslationEntity> translations) {
         Map<Long, String> labels = new LinkedHashMap<>();
         if (translations == null) {
             return labels;
         }
-        for (FormConfigFieldTranslationEntity translation : translations) {
+        for (DocumentFieldTranslationEntity translation : translations) {
             if (translation.getLanguageId() != null && translation.getLongLabel() != null) {
                 labels.put(translation.getLanguageId(), translation.getLongLabel());
             }
@@ -201,12 +231,12 @@ public class FormConfigFieldAdapter {
         return labels;
     }
 
-    private Map<Long, String> toValidationMessageI18n(Collection<FormConfigFieldValidationTranslationEntity> translations) {
+    private Map<Long, String> toValidationMessageI18n(Collection<DocumentFieldValidationTranslationEntity> translations) {
         Map<Long, String> messages = new LinkedHashMap<>();
         if (translations == null) {
             return messages;
         }
-        for (FormConfigFieldValidationTranslationEntity translation : translations) {
+        for (DocumentFieldValidationTranslationEntity translation : translations) {
             if (translation.getLanguageId() != null && translation.getMessage() != null) {
                 messages.put(translation.getLanguageId(), translation.getMessage());
             }
@@ -252,12 +282,10 @@ public class FormConfigFieldAdapter {
         if (!validation.containsKey("type")) {
             return validation;
         }
-
         Object rawType = validation.get("type");
         if (rawType == null) {
             return Collections.emptyMap();
         }
-
         Map<String, Object> params = new LinkedHashMap<>();
         for (Map.Entry<String, Object> entry : validation.entrySet()) {
             if (!"type".equals(entry.getKey()) && entry.getValue() != null) {
@@ -291,5 +319,38 @@ public class FormConfigFieldAdapter {
 
     private Map<String, Object> castMap(Map<?, ?> map) {
         return objectMapper.convertValue(map, new TypeReference<Map<String, Object>>() {});
+    }
+
+    private List<DocumentSetupRequest.FieldSpec> readLegacyMetadata(String metadataJson) {
+        if (metadataJson == null || metadataJson.isBlank()) {
+            return Collections.emptyList();
+        }
+        try {
+            return objectMapper.readValue(metadataJson, new TypeReference<List<DocumentSetupRequest.FieldSpec>>() {});
+        } catch (Exception e) {
+            return Collections.emptyList();
+        }
+    }
+
+    private List<DocumentSetupRequest.FieldSpec> buildLegacyFallbackFields(DocumentSetupEntity setup) {
+        List<DocumentSetupRequest.FieldSpec> fields = new ArrayList<>();
+        fields.add(buildLegacyField(DocumentReferenceModels.DOCUMENT_NUMBER_REQUIRED, setup.isDocumentNumberRequired()));
+        fields.add(buildLegacyField(DocumentReferenceModels.ISSUED_COUNTRY_REQUIRED, setup.isIssuedCountryRequired()));
+        fields.add(buildLegacyField(DocumentReferenceModels.EXPIRY_DATE_REQUIRED, setup.isExpiryDateRequired()));
+        fields.add(buildLegacyField(DocumentReferenceModels.PRIMARY_CONTENT_REQUIRED, setup.isPrimaryContentRequired()));
+        fields.add(buildLegacyField(DocumentReferenceModels.SECONDARY_CONTENT_REQUIRED,
+                setup.isSecondaryContentRequired() || setup.isBackRequired()));
+        return fields;
+    }
+
+    private DocumentSetupRequest.FieldSpec buildLegacyField(String referenceModel, boolean required) {
+        return DocumentSetupRequest.FieldSpec.builder()
+                .referenceModel(referenceModel)
+                .visible(Boolean.TRUE)
+                .validations(Collections.singletonMap("required", new LinkedHashMap<>(Map.of(
+                        "value", required,
+                        "message", DEFAULT_REQUIRED_MESSAGE
+                ))))
+                .build();
     }
 }

@@ -1,42 +1,46 @@
 package com.example.dynamicform.product.entity;
- 
+
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "documents")
-public class DocumentEntity {
+@Table(
+        name = "rsp_wise_document_field_translations",
+        uniqueConstraints = @UniqueConstraint(name = "uk_rsp_doc_field_language", columnNames = {"field_config_id", "language_id"})
+)
+public class DocumentFieldTranslationEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(name = "id", nullable = false, updatable = false)
     private UUID id;
 
-    @Column(name = "document_name", nullable = false, unique = true, length = 255)
-    private String documentName;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "field_config_id", nullable = false)
+    private DocumentFieldConfigEntity fieldConfig;
 
-    @Column(name = "description", length = 1000)
-    private String description;
+    @Column(name = "language_id", nullable = false)
+    private Long languageId;
 
-    @Builder.Default
-    @Column(name = "is_active", nullable = false)
-    private Boolean isActive = true;
+    @Column(name = "short_label", length = 1000)
+    private String shortLabel;
 
-
-    @Column(name = "metadata_json", columnDefinition = "TEXT")
-    private String metadataJson;
+    @Column(name = "long_label", length = 2000)
+    private String longLabel;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

@@ -1,66 +1,49 @@
 package com.example.dynamicform.product.service;
 
-import com.example.dynamicform.platform.dto.FieldSpecRequest;
-import com.example.dynamicform.platform.dto.DynamicMetadataBuildRequest;
-import com.example.dynamicform.platform.dto.FormConfigResponse;
-import com.example.dynamicform.platform.dto.metadata.RawFormMetadata;
+import com.example.dynamicform.platform.api.dto.AttributeContractResponse;
+import com.example.dynamicform.platform.api.dto.DynamicMetadataBuildRequest;
+import com.example.dynamicform.platform.api.dto.FieldSpecRequest;
+import com.example.dynamicform.platform.api.dto.FormConfigResponse;
+import com.example.dynamicform.platform.api.dto.metadata.RawFormMetadata;
+import com.example.dynamicform.platform.service.AttributeContractAccessService;
+import com.example.dynamicform.platform.service.DynamicMetadataBuildService;
 import com.example.dynamicform.platform.service.ResponseLocalizationService;
 import com.example.dynamicform.product.dto.FormConfigTranslationRequest;
-import com.example.dynamicform.product.entity.CustomerFormConfigurationEntity;
-import com.example.dynamicform.product.entity.FormConfigFieldEntity;
-import com.example.dynamicform.product.entity.FormConfigFieldTranslationEntity;
-import com.example.dynamicform.product.entity.FormConfigFieldValidationEntity;
-import com.example.dynamicform.product.entity.FormConfigFieldValidationTranslationEntity;
+import com.example.dynamicform.product.entity.*;
+import com.example.dynamicform.product.repository.DocumentSetupRepository;
 import com.example.dynamicform.product.repository.FormConfigurationRepository;
-import com.example.dynamicform.product.repository.RSPWiseDocumentSetupRepository;
-import com.example.dynamicform.platform.service.DynamicMetadataBuildService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 @Service
+@RequiredArgsConstructor
 public class FormConfigService {
 
     private static final Logger logger = LoggerFactory.getLogger(FormConfigService.class);
     private static final String CUSTOMER_METADATA_PATH = "customer_static_metadata.json";
     private static final String BENEFICIARY_METADATA_PATH = "beneficiary_static_metadata.json";
     private static final String TRANSACTION_METADATA_PATH = "transaction_static_metadata.json";
-    private static final String DOCUMENT_METADATA_PATH = "document_metadata.json";
+    private static final String DOCUMENT_METADATA_PATH = "document_static_metadata.json";
 
     private final FormConfigurationRepository repository;
     private final ObjectMapper objectMapper;
-    private final RSPAttributeContractService rspAttributeContractService;
+    private final AttributeContractAccessService attributeContractService;
     private final DynamicMetadataBuildService dynamicMetadataBuildService;
     private final FormConfigFieldAdapter formConfigFieldAdapter;
     private final FormConfigMetadataResolver formConfigMetadataResolver;
     private final ResponseLocalizationService responseLocalizationService;
-    private final com.example.dynamicform.product.repository.RSPWiseDocumentSetupRepository rspWiseDocumentSetupRepository;
+    private final DocumentSetupRepository documentSetupRepository;
 
-    public FormConfigService(FormConfigurationRepository repository, 
-                               ObjectMapper objectMapper, 
-                               RSPAttributeContractService rspAttributeContractService,
-                               DynamicMetadataBuildService dynamicMetadataBuildService,
-                               FormConfigFieldAdapter formConfigFieldAdapter,
-                               FormConfigMetadataResolver formConfigMetadataResolver,
-                               ResponseLocalizationService responseLocalizationService,
-                               com.example.dynamicform.product.repository.RSPWiseDocumentSetupRepository rspWiseDocumentSetupRepository) {
-        this.repository = repository;
-        this.objectMapper = objectMapper;
-        this.rspAttributeContractService = rspAttributeContractService;
-        this.dynamicMetadataBuildService = dynamicMetadataBuildService;
-        this.formConfigFieldAdapter = formConfigFieldAdapter;
-        this.formConfigMetadataResolver = formConfigMetadataResolver;
-        this.responseLocalizationService = responseLocalizationService;
-        this.rspWiseDocumentSetupRepository = rspWiseDocumentSetupRepository;
-    }
 
     public List<CustomerFormConfigurationEntity> getAllConfigurations() {
         return repository.findAll();
@@ -86,20 +69,12 @@ public class FormConfigService {
         return repository.findByFormNameAndVersion(formName, version).orElse(null);
     }
 
-    public FormConfigResponse buildResponse(CustomerFormConfigurationEntity entity, String language) {
-        RawFormMetadata metadata = language == null || language.isBlank()
+    public FormConfigResponse buildResponse(CustomerFormConfigurationEntity entity, Long languageId) {
+        RawFormMetadata metadata = languageId == null
                 ? formConfigMetadataResolver.resolve(entity)
                 : formConfigMetadataResolver.resolveWithTranslations(loadDetailedConfiguration(entity.getId()));
         return FormConfigResponse.builder()
-                .formName(entity.getFormName())
-                .version(entity.getVersion())
-                .description(entity.getDescription())
-                .rspId(entity.getRspId())
-                .isActive(entity.getIsActive())
-                .metadata(responseLocalizationService.prepareRawMetadataResponse(metadata, language))
-                .targetDtoClassName(metadata != null ? metadata.getTargetClassName() : null)
-                .createdAt(entity.getCreatedAt())
-                .updatedAt(entity.getUpdatedAt())
+                .metadata(responseLocalizationService.prepareRawMetadataResponse(metadata, languageId))
                 .build();
     }
 
@@ -157,10 +132,10 @@ public class FormConfigService {
     }
 
     public CustomerFormConfigurationEntity generateGenericMetaData(FieldSpecRequest request,
-                                                                  String targetClassName,
-                                                                  String staticMetadataPath,
-                                                                  String moduleName,
-                                                                  String artifactName) {
+                                                                   String targetClassName,
+                                                                   String staticMetadataPath,
+                                                                   String moduleName,
+                                                                   String artifactName) {
         return generateMetaData(request, moduleName != null ? moduleName : "generic",
                 targetClassName,
                 staticMetadataPath,
@@ -187,12 +162,12 @@ public class FormConfigService {
 
         try {
 
-            List<com.example.dynamicform.product.dto.RSPAttributeContractResponse> contracts = rspAttributeContractService.findByRspId(rspId, module);
+            List<AttributeContractResponse> contracts = attributeContractService.findByModule(module);
             java.util.Set<String> enabledReferenceModels = contracts.stream()
                     .map(c -> c.getReferenceModel().replace(".", "/"))
                     .collect(java.util.stream.Collectors.toSet());
 
-            com.example.dynamicform.platform.dto.metadata.RawFormMetadata metadata = dynamicMetadataBuildService.build(
+            RawFormMetadata metadata = dynamicMetadataBuildService.build(
                     DynamicMetadataBuildRequest.builder()
                             .formName(formName)
                             .moduleName(moduleName)
@@ -226,14 +201,7 @@ public class FormConfigService {
                     .build();
             entity.getFieldConfigs().addAll(formConfigFieldAdapter.toEntities(entity, request.getFields()));
 
-            if (latestOpt.isPresent()) {
-                CustomerFormConfigurationEntity previous = latestOpt.get();
-                previous.setIsActive(false);
-                repository.save(previous);
-            }
-
-            CustomerFormConfigurationEntity saved = repository.save(entity);
-            return saved;
+            return entity;
         } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
             throw new IllegalArgumentException("Failed to serialize metadata for " + formName, e);
         }
@@ -273,14 +241,14 @@ public class FormConfigService {
 
     private void mergeFieldTranslations(FormConfigFieldEntity fieldEntity,
                                         FormConfigTranslationRequest.FieldTranslation fieldTranslation) {
-        Map<String, FormConfigFieldTranslationEntity> translationsByLocale = new LinkedHashMap<>();
+        Map<Long, FormConfigFieldTranslationEntity> translationsByLanguageId = new LinkedHashMap<>();
         for (FormConfigFieldTranslationEntity translation : fieldEntity.getTranslations()) {
-            if (translation.getLocale() != null) {
-                translationsByLocale.put(translation.getLocale(), translation);
+            if (translation.getLanguageId() != null) {
+                translationsByLanguageId.put(translation.getLanguageId(), translation);
             }
         }
-        mergeLabelTranslations(fieldEntity, translationsByLocale, fieldTranslation.getShortLabelI18n(), true);
-        mergeLabelTranslations(fieldEntity, translationsByLocale, fieldTranslation.getLongLabelI18n(), false);
+        mergeLabelTranslations(fieldEntity, translationsByLanguageId, fieldTranslation.getShortLabelI18n(), true);
+        mergeLabelTranslations(fieldEntity, translationsByLanguageId, fieldTranslation.getLongLabelI18n(), false);
 
         if (fieldTranslation.getValidations() == null) {
             return;
@@ -304,20 +272,20 @@ public class FormConfigService {
     }
 
     private void mergeLabelTranslations(FormConfigFieldEntity fieldEntity,
-                                        Map<String, FormConfigFieldTranslationEntity> translationsByLocale,
-                                        Map<String, String> values,
+                                        Map<Long, FormConfigFieldTranslationEntity> translationsByLanguageId,
+                                        Map<Long, String> values,
                                         boolean shortLabel) {
         if (values == null || values.isEmpty()) {
             return;
         }
-        for (Map.Entry<String, String> entry : values.entrySet()) {
-            if (entry.getKey() == null || entry.getKey().isBlank()) {
+        for (Map.Entry<Long, String> entry : values.entrySet()) {
+            if (entry.getKey() == null) {
                 continue;
             }
-            FormConfigFieldTranslationEntity translation = translationsByLocale.computeIfAbsent(entry.getKey(), locale -> {
+            FormConfigFieldTranslationEntity translation = translationsByLanguageId.computeIfAbsent(entry.getKey(), languageId -> {
                 FormConfigFieldTranslationEntity created = FormConfigFieldTranslationEntity.builder()
                         .field(fieldEntity)
-                        .locale(locale)
+                        .languageId(languageId)
                         .build();
                 fieldEntity.getTranslations().add(created);
                 return created;
@@ -331,24 +299,24 @@ public class FormConfigService {
     }
 
     private void mergeValidationTranslations(FormConfigFieldValidationEntity validationEntity,
-                                             Map<String, String> messageI18n) {
+                                             Map<Long, String> messageI18n) {
         if (messageI18n == null || messageI18n.isEmpty()) {
             return;
         }
-        Map<String, FormConfigFieldValidationTranslationEntity> translationsByLocale = new LinkedHashMap<>();
+        Map<Long, FormConfigFieldValidationTranslationEntity> translationsByLanguageId = new LinkedHashMap<>();
         for (FormConfigFieldValidationTranslationEntity translation : validationEntity.getTranslations()) {
-            if (translation.getLocale() != null) {
-                translationsByLocale.put(translation.getLocale(), translation);
+            if (translation.getLanguageId() != null) {
+                translationsByLanguageId.put(translation.getLanguageId(), translation);
             }
         }
-        for (Map.Entry<String, String> entry : messageI18n.entrySet()) {
-            if (entry.getKey() == null || entry.getKey().isBlank()) {
+        for (Map.Entry<Long, String> entry : messageI18n.entrySet()) {
+            if (entry.getKey() == null) {
                 continue;
             }
-            FormConfigFieldValidationTranslationEntity translation = translationsByLocale.computeIfAbsent(entry.getKey(), locale -> {
+            FormConfigFieldValidationTranslationEntity translation = translationsByLanguageId.computeIfAbsent(entry.getKey(), languageId -> {
                 FormConfigFieldValidationTranslationEntity created = FormConfigFieldValidationTranslationEntity.builder()
                         .validation(validationEntity)
-                        .locale(locale)
+                        .languageId(languageId)
                         .build();
                 validationEntity.getTranslations().add(created);
                 return created;

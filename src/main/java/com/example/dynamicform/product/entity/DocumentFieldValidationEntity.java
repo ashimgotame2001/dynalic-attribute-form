@@ -10,9 +10,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -22,8 +20,11 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 @Entity
-@Table(name = "form_configuration_field_validations")
-public class FormConfigFieldValidationEntity {
+@Table(
+        name = "rsp_wise_document_field_validations",
+        uniqueConstraints = @UniqueConstraint(name = "uk_rsp_doc_field_validation_type", columnNames = {"field_config_id", "validation_type"})
+)
+public class DocumentFieldValidationEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -31,8 +32,8 @@ public class FormConfigFieldValidationEntity {
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "field_id", nullable = false)
-    private FormConfigFieldEntity field;
+    @JoinColumn(name = "field_config_id", nullable = false)
+    private DocumentFieldConfigEntity fieldConfig;
 
     @Column(name = "display_order")
     private Integer displayOrder;
@@ -46,13 +47,13 @@ public class FormConfigFieldValidationEntity {
     @Column(name = "pattern", length = 2000)
     private String pattern;
 
-    @Column(name = "message", length = 2000)
+    @Column(name = "message", length = 1000)
     private String message;
 
     @Builder.Default
     @OneToMany(mappedBy = "validation", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("languageId ASC")
-    private Set<FormConfigFieldValidationTranslationEntity> translations = new LinkedHashSet<>();
+    private Set<DocumentFieldValidationTranslationEntity> translations = new LinkedHashSet<>();
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

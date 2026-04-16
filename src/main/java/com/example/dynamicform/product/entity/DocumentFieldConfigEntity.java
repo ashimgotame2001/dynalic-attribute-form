@@ -21,10 +21,10 @@ import java.util.UUID;
 @Builder
 @Entity
 @Table(
-        name = "form_configuration_fields",
-        uniqueConstraints = @UniqueConstraint(name = "uk_form_config_reference_model", columnNames = {"form_configuration_id", "reference_model"})
+        name = "rsp_wise_document_field_configs",
+        uniqueConstraints = @UniqueConstraint(name = "uk_rsp_doc_setup_reference_model", columnNames = {"setup_id", "reference_model"})
 )
-public class FormConfigFieldEntity {
+public class DocumentFieldConfigEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -32,10 +32,10 @@ public class FormConfigFieldEntity {
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "form_configuration_id", nullable = false)
-    private CustomerFormConfigurationEntity formConfiguration;
+    @JoinColumn(name = "setup_id", nullable = false)
+    private DocumentSetupEntity setup;
 
-    @Column(name = "reference_model", nullable = false, length = 500)
+    @Column(name = "reference_model", nullable = false, length = 255)
     private String referenceModel;
 
     @Column(name = "display_order")
@@ -44,21 +44,21 @@ public class FormConfigFieldEntity {
     @Column(name = "visible")
     private Boolean visible;
 
-    @Column(name = "short_label", length = 1000)
+    @Column(name = "short_label", length = 500)
     private String shortLabel;
 
-    @Column(name = "long_label", length = 2000)
+    @Column(name = "long_label", length = 1000)
     private String longLabel;
 
     @Builder.Default
-    @OneToMany(mappedBy = "field", cascade = CascadeType.ALL, orphanRemoval = true)
-    @OrderBy("displayOrder ASC")
-    private Set<FormConfigFieldValidationEntity> validations = new LinkedHashSet<>();
+    @OneToMany(mappedBy = "fieldConfig", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("validationType ASC")
+    private Set<DocumentFieldValidationEntity> validations = new LinkedHashSet<>();
 
     @Builder.Default
-    @OneToMany(mappedBy = "field", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "fieldConfig", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("languageId ASC")
-    private Set<FormConfigFieldTranslationEntity> translations = new LinkedHashSet<>();
+    private Set<DocumentFieldTranslationEntity> translations = new LinkedHashSet<>();
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
