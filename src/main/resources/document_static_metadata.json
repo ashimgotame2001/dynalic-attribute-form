@@ -1,0 +1,30 @@
+[
+  {
+    "label": "Document Type",
+    "value": "document/documentType/id"
+  },
+  {
+    "label": "Issue Country",
+    "value": "document/issueCountry/alphaTwoCode"
+  },
+  {
+    "label": "Document Number",
+    "value": "document/documentNumber"
+  },
+  {
+    "label": "Issue Date",
+    "value": "document/issueDate"
+  },
+  {
+    "label": "Expiry Date",
+    "value": "document/expiryDate"
+  },
+  {
+    "label": "Front Page",
+    "value": "document/primaryContent"
+  },
+  {
+    "label": "Back Page",
+    "value": "document/secondaryContent"
+  }
+]

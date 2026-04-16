@@ -1,0 +1,58 @@
+[
+  {
+    "label": "Gender",
+    "referenceModel": "individual/gender/id"
+  },
+  {
+    "label": "Nationality",
+    "referenceModel": "individual/origin/alphaTwoCode"
+  },
+  {
+    "label": "Alpha Two Code",
+    "referenceModel": "individual/residingCountry/alphaTwoCode"
+  },
+  {
+    "label": "Postal Code",
+    "referenceModel": "individual/address/postalCodeInfo/postalCode"
+  },
+  {
+    "label": "City",
+    "referenceModel": "individual/address/city"
+  },
+  {
+    "label": "Address Line 1",
+    "referenceModel": "individual/address/addressLine1"
+  },
+  {
+    "label": "FirstName",
+    "referenceModel": "individual/firstName"
+  },
+  {
+    "label": "Middle Name",
+    "referenceModel": "individual/middleName"
+  },
+  {
+    "label": "Last Name",
+    "referenceModel": "individual/lastName"
+  },
+  {
+    "label": "Date Of Birth",
+    "referenceModel": "individual/dateOfBirth"
+  },
+  {
+    "label": "Contact Number",
+    "referenceModel": "individual/contactNumber"
+  },
+  {
+    "label": "Email",
+    "referenceModel": "individual/email"
+  },
+  {
+    "label": "Secret",
+    "referenceModel": "user/secret"
+  },
+  {
+    "label": "Referral Code",
+    "referenceModel": "referral/referralCode"
+  }
+]
